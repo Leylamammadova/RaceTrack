@@ -5,6 +5,8 @@
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
 #include <stdlib.h>
+#include <random>
+#include <ctime>
 
 
 namespace octet {
@@ -33,6 +35,15 @@ namespace octet {
       return out;
     }
 
+    float RandomFloat(float a, float b) {
+      float random = ((float)rand()) / (float)RAND_MAX;
+      float diff = b - a;
+      float r = random * diff;
+      return a + r;
+    }
+
+    vec3 waypoints[3];
+
   public:
     /// this is called when we construct the class before everything is initialised.
     example_box(int argc, char **argv) : app(argc, argv) {
@@ -45,6 +56,13 @@ namespace octet {
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
       road_shader.init(load_file("shaders/tree.vert").c_str(), load_file("shaders/tree.frag").c_str()); // loads, compiles and links our shader programs
+
+      //random
+      std::srand(std::time(0));
+
+      waypoints[0] = vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), RandomFloat(-1, 1));
+      waypoints[1] = vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), RandomFloat(-1, 1));
+      waypoints[2] = vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), RandomFloat(-1, 1));
 
       float TRACK_WIDTH = 0.5f;
       float DETAIL_STEP = 0.00001f;
@@ -89,24 +107,17 @@ namespace octet {
     }
 
     vec3 get_bezier_point(float t) {
-      vec3 way1(-0.75f, -0.5f, 0);
-      vec3 way2(0, 1.0f, 0);
-      vec3 way3(0.75f, -0.5f, 0);
-
       vec3 point(0,0,0);
-      point[0] = (1 - t) * (1 - t) * way1[0] + 2 * (1 - t) * t * way2[0] + t * t * way3[0];
-      point[1] = (1 - t) * (1 - t) * way1[1] + 2 * (1 - t) * t * way2[1] + t * t * way3[1];
+      point[0] = (1 - t) * (1 - t) * waypoints[0][0] + 2 * (1 - t) * t * waypoints[1][0] + t * t * waypoints[2][0];
+      point[1] = (1 - t) * (1 - t) * waypoints[0][1] + 2 * (1 - t) * t * waypoints[1][1] + t * t * waypoints[2][1];
       return point;
     }
     vec3 get_bezier_tangent(float t) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
-      vec3 way1(-0.75f, -0.5f, 0);
-      vec3 way2(0, 1.0f, 0);
-      vec3 way3(0.75f, -0.5f, 0);
 
-      vec3 P11 = way1 + t * (way2 - way1);
-      vec3 P12 = way2 + t * (way3 - way2);
+      vec3 P11 = waypoints[0] + t * (waypoints[1] - waypoints[2]);
+      vec3 P12 = waypoints[1] + t * (waypoints[2] - waypoints[1]);
 
       vec3 tan = P12 - P11;
       return tan;
