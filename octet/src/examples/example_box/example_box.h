@@ -5,7 +5,6 @@
 // Modular Framework for OpenGLES2 rendering on multiple platforms.
 //
 #include <stdlib.h>
-#include <random>
 #include <ctime>
 
 
@@ -42,7 +41,11 @@ namespace octet {
       return a + r;
     }
 
-    vec3 waypoints[3];
+    /// Vector of points
+    int num_points;
+    std::vector<vec3> waypoints;
+    std::vector<vec3> sorted_waypoints;
+
 
   public:
     /// this is called when we construct the class before everything is initialised.
@@ -57,14 +60,24 @@ namespace octet {
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
       road_shader.init(load_file("shaders/tree.vert").c_str(), load_file("shaders/tree.frag").c_str()); // loads, compiles and links our shader programs
 
-      //random
+      //random points
       std::srand(std::time(0));
+      
+      num_points = 13;
+      for (int i = 0; i < num_points; i++) {
+        waypoints.push_back(vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), 0));
+      }
 
-      waypoints[0] = vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), RandomFloat(-1, 1));
-      waypoints[1] = vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), RandomFloat(-1, 1));
-      waypoints[2] = vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), RandomFloat(-1, 1));
+      sorted_waypoints.push_back(waypoints.back());
+      waypoints.pop_back();
 
-      float TRACK_WIDTH = 0.5f;
+      for (int i = 0; i < waypoints.size(); i++) {
+        float distance;
+        distance = get_distance(sorted_waypoints.back(), waypoints[i]);
+
+      }
+
+      float TRACK_WIDTH = 0.1f;
       float DETAIL_STEP = 0.00001f;
 
       //input = std::vector<std::tuple<vec3, vec3>>(5);
@@ -104,6 +117,12 @@ namespace octet {
       scene_node *node = new scene_node();
       app_scene->add_child(node);
       app_scene->add_mesh_instance(new mesh_instance(node, box, red));*/
+    }
+
+    float get_distance(vec3 a, vec3 b) {
+      return sqrt(((b[0] - a[0]) * (b[0] - a[0]))
+        + ((b[1] - a[1]) * (b[1] - a[1]))
+        + ((b[2] - a[2]) * (b[2] - a[2])));
     }
 
     vec3 get_bezier_point(float t) {

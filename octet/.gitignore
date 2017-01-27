@@ -11,6 +11,8 @@
 *.user
 *.opensdf
 *.obj
+*.VC.db
+*.VC.VC.opendb
 .DS_Store
 xcuserdata
 log.txt
