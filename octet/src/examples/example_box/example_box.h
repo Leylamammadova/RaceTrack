@@ -92,6 +92,18 @@ namespace octet {
         waypoints.erase(waypoints.begin() + point_index);
       }
 
+      // Averaging points back into original vector.
+      for (int i = 0; i < sorted_waypoints.size(); i++) {
+        if ((i + 2) == sorted_waypoints.size()) {
+          waypoints.push_back((sorted_waypoints[i] + sorted_waypoints[i + 1] + sorted_waypoints[0]) / 3);
+        }
+        else if ((i + 1) == sorted_waypoints.size()) {
+          waypoints.push_back((sorted_waypoints[i] + sorted_waypoints[0] + sorted_waypoints[1]) / 3);
+        }
+        else {
+          waypoints.push_back((sorted_waypoints[i] + sorted_waypoints[i + 1] + sorted_waypoints[i + 2]) / 3);
+        }
+      }
 
       float TRACK_WIDTH = 0.1f;
       float DETAIL_STEP = 0.00001f;
@@ -143,16 +155,16 @@ namespace octet {
 
     vec3 get_bezier_point(float t) {
       vec3 point(0, 0, 0);
-      point[0] = (1 - t) * (1 - t) * sorted_waypoints[0][0] + 2 * (1 - t) * t * sorted_waypoints[1][0] + t * t * sorted_waypoints[2][0];
-      point[1] = (1 - t) * (1 - t) * sorted_waypoints[0][1] + 2 * (1 - t) * t * sorted_waypoints[1][1] + t * t * sorted_waypoints[2][1];
+      point[0] = (1 - t) * (1 - t) * waypoints[0][0] + 2 * (1 - t) * t * waypoints[1][0] + t * t * waypoints[2][0];
+      point[1] = (1 - t) * (1 - t) * waypoints[0][1] + 2 * (1 - t) * t * waypoints[1][1] + t * t * waypoints[2][1];
       return point;
     }
     vec3 get_bezier_tangent(float t) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
 
-      vec3 P11 = sorted_waypoints[0] + t * (sorted_waypoints[1] - sorted_waypoints[2]);
-      vec3 P12 = sorted_waypoints[1] + t * (sorted_waypoints[2] - sorted_waypoints[1]);
+      vec3 P11 = waypoints[0] + t * (waypoints[1] - waypoints[2]);
+      vec3 P12 = waypoints[1] + t * (waypoints[2] - waypoints[1]);
 
       vec3 tan = P12 - P11;
       return tan;
