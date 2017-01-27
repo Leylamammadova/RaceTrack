@@ -54,7 +54,7 @@ namespace octet {
 
     /// this is called once OpenGL is initialized
     void app_init() {
-      app_scene =  new visual_scene();
+      app_scene = new visual_scene();
       app_scene->create_default_camera_and_lights();
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
@@ -62,20 +62,36 @@ namespace octet {
 
       //random points
       std::srand(std::time(0));
-      
+
+      // set the number of points you want generated
       num_points = 13;
       for (int i = 0; i < num_points; i++) {
         waypoints.push_back(vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), 0));
       }
 
+      // sorting points by closest distance to each other
       sorted_waypoints.push_back(waypoints.back());
       waypoints.pop_back();
+      float shortest_dist, distance2;
+      int point_index;
 
-      for (int i = 0; i < waypoints.size(); i++) {
-        float distance;
-        distance = get_distance(sorted_waypoints.back(), waypoints[i]);
+      while (!waypoints.empty()) {
+        shortest_dist = 0.0f;
+        distance2 = 0.0f;
+        point_index = 0;
 
+        for (int i = 0; i < waypoints.size(); i++) {
+          distance2 = get_distance(sorted_waypoints.back(), waypoints[i]);
+          if (distance2 < shortest_dist || shortest_dist <= 0) {
+            shortest_dist = distance2;
+            point_index = i;
+          }
+        }
+        sorted_waypoints.push_back(waypoints[point_index]);
+
+        waypoints.erase(waypoints.begin() + point_index);
       }
+
 
       float TRACK_WIDTH = 0.1f;
       float DETAIL_STEP = 0.00001f;
@@ -126,17 +142,17 @@ namespace octet {
     }
 
     vec3 get_bezier_point(float t) {
-      vec3 point(0,0,0);
-      point[0] = (1 - t) * (1 - t) * waypoints[0][0] + 2 * (1 - t) * t * waypoints[1][0] + t * t * waypoints[2][0];
-      point[1] = (1 - t) * (1 - t) * waypoints[0][1] + 2 * (1 - t) * t * waypoints[1][1] + t * t * waypoints[2][1];
+      vec3 point(0, 0, 0);
+      point[0] = (1 - t) * (1 - t) * sorted_waypoints[0][0] + 2 * (1 - t) * t * sorted_waypoints[1][0] + t * t * sorted_waypoints[2][0];
+      point[1] = (1 - t) * (1 - t) * sorted_waypoints[0][1] + 2 * (1 - t) * t * sorted_waypoints[1][1] + t * t * sorted_waypoints[2][1];
       return point;
     }
     vec3 get_bezier_tangent(float t) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
 
-      vec3 P11 = waypoints[0] + t * (waypoints[1] - waypoints[2]);
-      vec3 P12 = waypoints[1] + t * (waypoints[2] - waypoints[1]);
+      vec3 P11 = sorted_waypoints[0] + t * (sorted_waypoints[1] - sorted_waypoints[2]);
+      vec3 P12 = sorted_waypoints[1] + t * (sorted_waypoints[2] - sorted_waypoints[1]);
 
       vec3 tan = P12 - P11;
       return tan;
@@ -148,10 +164,10 @@ namespace octet {
       get_viewport_size(vx, vy);
       app_scene->begin_render(vx, vy);
 
-      
+
 
       // update matrices. assume 30 fps.
-      app_scene->update(1.0f/30);
+      app_scene->update(1.0f / 30);
 
       // draw the scene
       app_scene->render((float)vx / vy);
