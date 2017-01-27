@@ -163,10 +163,23 @@ namespace octet {
     }
 
     vec3 get_bezier_point(float t) {
+     
       vec3 point(0, 0, 0);
-      point[0] = (1 - t) * (1 - t) * waypoints[0][0] + 2 * (1 - t) * t * waypoints[1][0] + t * t * waypoints[2][0];
-      point[1] = (1 - t) * (1 - t) * waypoints[0][1] + 2 * (1 - t) * t * waypoints[1][1] + t * t * waypoints[2][1];
+
+      //sorted some variables 
+      float tt = t * t;
+      float ttt = t * t * t;
+      float u = (1 - t);
+      float uu = u * (1 - t);
+      float uuu = uu *(1 - t);
+      //formula of Cubic Bezier 
+      point[0] = uuu * waypoints[0][0] + 3 * uu * t * waypoints[1][0] + 3 * u * tt* waypoints[2][0] + ttt* waypoints[3][0];
+      point[1] = uuu * waypoints[0][1] + 3 * uu * t * waypoints[1][1] + 3 * u * tt* waypoints[2][1] + ttt* waypoints[3][1];
+     // point[2] = uuu * waypoints[0][2] + 3 * uu * t * waypoints[1][2] + 3 * u * tt* waypoints[2][2] + ttt* waypoints[3][2];
+    //  point[3] = uuu * waypoints[0][3] + 3 * uu * t * waypoints[1][3] + 3 * u * tt * waypoints[2][3] + ttt * waypoints[3][3];
+
       return point;
+
     }
     vec3 get_bezier_tangent(float t) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
@@ -174,10 +187,13 @@ namespace octet {
 
       vec3 P11 = waypoints[0] + t * (waypoints[1] - waypoints[2]);
       vec3 P12 = waypoints[1] + t * (waypoints[2] - waypoints[1]);
+      //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
 
       vec3 tan = P12 - P11;
       return tan;
     }
+
+
 
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
@@ -185,7 +201,7 @@ namespace octet {
       get_viewport_size(vx, vy);
       app_scene->begin_render(vx, vy);
 
-
+   
 
       // update matrices. assume 30 fps.
       app_scene->update(1.0f / 30);
