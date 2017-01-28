@@ -11,12 +11,15 @@
 namespace octet {
   /// Scene containing a box with octet.
   class example_box : public app {
+    bool debug_mode = true;
+
+
     // scene for drawing box
     ref<visual_scene> app_scene;
 
     std::vector<std::tuple<vec3, vec3>> input;
     std::vector<float> vertBuff;
-    std::vector<float> debugBezBuff; // Used to show the actual bezier path
+    std::vector<vec3> debugBezBuff; // Used to show the actual bezier path with debug lines
     GLuint vertex_buffer;
     GLuint debug_buffer;
     shader road_shader;
@@ -74,7 +77,7 @@ namespace octet {
       float TRACK_WIDTH = 0.1f;
       float DETAIL_STEP = 0.00001f;
 
-      debugBezBuff = std::vector<float>();
+      debugBezBuff = std::vector<vec3>();
 
       vertBuff = std::vector<float>();
 
@@ -94,9 +97,7 @@ namespace octet {
         vertBuff.push_back(p2[1]);
         vertBuff.push_back(p2[2]);
 
-        debugBezBuff.push_back(pos[0]);
-        debugBezBuff.push_back(pos[1]);
-        debugBezBuff.push_back(pos[2]);
+        debugBezBuff.push_back(pos);
       }
 
     }
@@ -202,28 +203,41 @@ namespace octet {
       // draw the scene
       app_scene->render((float)vx / vy);
 
-      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-      glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_STATIC_DRAW);
-      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-      glEnableVertexAttribArray(attribute_pos);
-      glUseProgram(road_shader.get_program());
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, vertBuff.size() / 3);
-      glBindVertexArray(attribute_pos);
-
-      draw_debug();
+      if (debug_mode) {
+        draw_debug();
+      }else{
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+        glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(attribute_pos);
+        glUseProgram(road_shader.get_program());
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, vertBuff.size() / 3);
+        glBindVertexArray(attribute_pos);
+      }
     }
 
     void draw_debug() {
       /* https://en.wikibooks.org/wiki/OpenGL_Programming/GLStart/Tut3 */
+
+      // Draw the waypoints
       glUseProgram(0);
       glColor3f(1.0f, 0.0f, 0.0f); //red colour
       glPointSize(5.0f);//set point size to 10 pixels
       glBegin(GL_POINTS); //starts drawing of points
-      for (vec3 &point : sorted_waypoints) {
+      for (vec3 &point : waypoints) {
         glVertex3f(point[0], point[1], point[2]);
       }
       glEnd();//end drawing of points
 
+      // Draw the bezzier line.
+      glColor3f(0.0f, 1.0f, 0.0f); //green colour
+      glBegin(GL_LINE_STRIP); //starts drawing of line_strip
+      for (int i = 0; i < debugBezBuff.size() - 1; i++) {
+        glVertex3f(debugBezBuff[i][0], debugBezBuff[i][1], debugBezBuff[i][2]);
+        glVertex3f(debugBezBuff[i+1][0], debugBezBuff[i+1][1], debugBezBuff[i+1][2]);
+      }
+      glEnd();//end drawing of Line_strip
+      
     }
   };
 }
