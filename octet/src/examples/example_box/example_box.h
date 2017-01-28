@@ -16,6 +16,8 @@ namespace octet {
 
     std::vector<std::tuple<vec3, vec3>> input;
     std::vector<float> vertBuff;
+    std::vector<float> debugBezBuff; // Used to show the actual bezier path
+    std::vector<float> debugWaypointsBuff; // Used to show the random waypoints
     GLuint vertex_buffer;
     shader road_shader;
 
@@ -58,7 +60,7 @@ namespace octet {
       app_scene->create_default_camera_and_lights();
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
-      road_shader.init(load_file("shaders/tree.vert").c_str(), load_file("shaders/tree.frag").c_str()); // loads, compiles and links our shader programs
+      road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
 
       // initialise random
       std::srand(std::time(0));
@@ -68,6 +70,13 @@ namespace octet {
       sort_waypoints();
       average_waypoints();
       
+      debugWaypointsBuff = std::vector<float>();
+
+      for (auto &point : sorted_waypoints) {
+        debugWaypointsBuff.push_back(point[0]);
+        debugWaypointsBuff.push_back(point[1]);
+        debugWaypointsBuff.push_back(point[2]);
+      }
 
       float TRACK_WIDTH = 0.1f;
       float DETAIL_STEP = 0.00001f;
@@ -78,6 +87,8 @@ namespace octet {
       //input[2] = std::tuple<vec3, vec3>(vec3(0, 0.5, 0), vec3(0, 1, 0));
       //input[3] = std::tuple<vec3, vec3>(vec3(0.5f, 0, 0), vec3(1, 1, 0));
       //input[4] = std::tuple<vec3, vec3>(vec3(0.75f, -0.5f, 0), vec3(1, 0, 0));
+
+      debugBezBuff = std::vector<float>();
 
       vertBuff = std::vector<float>();
 
@@ -96,17 +107,12 @@ namespace octet {
         vertBuff.push_back(p2[0]);
         vertBuff.push_back(p2[1]);
         vertBuff.push_back(p2[2]);
+
+        debugBezBuff.push_back(pos[0]);
+        debugBezBuff.push_back(pos[1]);
+        debugBezBuff.push_back(pos[2]);
       }
 
-      /*for (float &f : vertBuff) {
-        printf("%f \n", f);
-      }*/
-
-      /*material *red = new material(vec4(1, 0, 0, 1));
-      mesh *box = new mesh_box(vec3(4));
-      scene_node *node = new scene_node();
-      app_scene->add_child(node);
-      app_scene->add_mesh_instance(new mesh_instance(node, box, red));*/
     }
 
     void generate_random_points() {
@@ -217,6 +223,10 @@ namespace octet {
       glUseProgram(road_shader.get_program());
       glDrawArrays(GL_TRIANGLE_STRIP, 0, vertBuff.size() / 3);
       glBindVertexArray(attribute_pos);
+    }
+
+    void draw_debug() {
+
     }
   };
 }
