@@ -17,8 +17,8 @@ namespace octet {
     std::vector<std::tuple<vec3, vec3>> input;
     std::vector<float> vertBuff;
     std::vector<float> debugBezBuff; // Used to show the actual bezier path
-    std::vector<float> debugWaypointsBuff; // Used to show the random waypoints
     GLuint vertex_buffer;
+    GLuint debug_buffer;
     shader road_shader;
 
     std::string load_file(const char* file_name) {
@@ -60,6 +60,7 @@ namespace octet {
       app_scene->create_default_camera_and_lights();
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
+      glGenBuffers(1, &debug_buffer);
       road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
 
       // initialise random
@@ -69,24 +70,9 @@ namespace octet {
       generate_random_points();
       sort_waypoints();
       average_waypoints();
-      
-      debugWaypointsBuff = std::vector<float>();
-
-      for (auto &point : sorted_waypoints) {
-        debugWaypointsBuff.push_back(point[0]);
-        debugWaypointsBuff.push_back(point[1]);
-        debugWaypointsBuff.push_back(point[2]);
-      }
 
       float TRACK_WIDTH = 0.1f;
       float DETAIL_STEP = 0.00001f;
-
-      //input = std::vector<std::tuple<vec3, vec3>>(5);
-      //input[0] = std::tuple<vec3, vec3>(vec3(-0.75f, -0.5f, 0), vec3(-1, 0, 0));
-      //input[1] = std::tuple<vec3, vec3>(vec3(-0.5f, 0, 0), vec3(-1, 1, 0));
-      //input[2] = std::tuple<vec3, vec3>(vec3(0, 0.5, 0), vec3(0, 1, 0));
-      //input[3] = std::tuple<vec3, vec3>(vec3(0.5f, 0, 0), vec3(1, 1, 0));
-      //input[4] = std::tuple<vec3, vec3>(vec3(0.75f, -0.5f, 0), vec3(1, 0, 0));
 
       debugBezBuff = std::vector<float>();
 
@@ -117,7 +103,7 @@ namespace octet {
 
     void generate_random_points() {
       // set the number of points you want generated
-      num_points = 211;
+      num_points = 22;
       for (int i = 0; i < num_points; i++) {
         waypoints.push_back(vec3(RandomFloat(-1, 1), RandomFloat(-1, 1), 0));
       }
@@ -203,11 +189,12 @@ namespace octet {
 
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
       int vx = 0, vy = 0;
       get_viewport_size(vx, vy);
       app_scene->begin_render(vx, vy);
 
-   
 
       // update matrices. assume 30 fps.
       app_scene->update(1.0f / 30);
@@ -219,13 +206,23 @@ namespace octet {
       glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_STATIC_DRAW);
       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
       glEnableVertexAttribArray(attribute_pos);
-
       glUseProgram(road_shader.get_program());
       glDrawArrays(GL_TRIANGLE_STRIP, 0, vertBuff.size() / 3);
       glBindVertexArray(attribute_pos);
+
+      draw_debug();
     }
 
     void draw_debug() {
+      /* https://en.wikibooks.org/wiki/OpenGL_Programming/GLStart/Tut3 */
+      glUseProgram(0);
+      glColor3f(1.0f, 0.0f, 0.0f); //red colour
+      glPointSize(5.0f);//set point size to 10 pixels
+      glBegin(GL_POINTS); //starts drawing of points
+      for (vec3 &point : sorted_waypoints) {
+        glVertex3f(point[0], point[1], point[2]);
+      }
+      glEnd();//end drawing of points
 
     }
   };
