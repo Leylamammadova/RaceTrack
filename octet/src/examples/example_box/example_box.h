@@ -71,7 +71,7 @@ namespace octet {
       debugBezBuff = std::vector<vec3>();
 
       vertBuff = std::vector<float>();
-      for (int i = 0; i < (waypoints.size() - 3); i++) {
+      for (int i = 0; i < (waypoints.size() - 3);) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
           vec3 pos = get_bezier_point(t, i);
           vec3 tan = get_bezier_tangent(t, i);
@@ -90,6 +90,7 @@ namespace octet {
 
           debugBezBuff.push_back(pos);
         }
+        i += 2;
       }
     }
 
@@ -105,18 +106,19 @@ namespace octet {
       float uuu = uu *(1 - t);
 
       //Quadratic Bezier
-      //point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
-      //point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+      point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
+      point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
 
       //formula of Cubic Bezier 
-      point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt* waypoints[iter + 3][0];
-      point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* waypoints[iter + 3][1];
+      //point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt* waypoints[iter + 3][0];
+      //point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* waypoints[iter + 3][1];
       //point[2] = uuu * waypoints[0][2] + 3 * uu * t * waypoints[1][2] + 3 * u * tt* waypoints[2][2] + ttt* waypoints[3][2];
       //point[3] = uuu * waypoints[0][3] + 3 * uu * t * waypoints[1][3] + 3 * u * tt * waypoints[2][3] + ttt * waypoints[3][3];
 
       return point;
 
     }
+
     vec3 get_bezier_tangent(float t, int iter) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
