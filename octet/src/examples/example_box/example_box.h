@@ -59,10 +59,10 @@ namespace octet {
       road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
 
       // initialise random
-      std::srand(std::time(0));
-
+      //std::srand(std::time(0));
+      std::srand(0);
       // create points for curves
-      num_points = 112;
+      num_points = 28;
       waypoints = pg.generate_random_points(num_points);
 
       float TRACK_WIDTH = 0.1f;
@@ -71,29 +71,29 @@ namespace octet {
       debugBezBuff = std::vector<vec3>();
 
       vertBuff = std::vector<float>();
+      for (int i = 0; i < (waypoints.size() - 3); i++) {
+        for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
+          vec3 pos = get_bezier_point(t, i);
+          vec3 tan = get_bezier_tangent(t, i);
+          vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
+          /*vec3 pos = std::get<0>(point_norm);
+          vec3 norm = std::get<1>(point_norm);*/
+          norm = norm.normalize() * TRACK_WIDTH * 0.5f; // Create track radius
+          vec3 p1 = pos - norm; // Calculate border vertex locations
+          vec3 p2 = pos + norm;
+          vertBuff.push_back(p1[0]); // Add vertex data (3 Floats (x, y and y)) to the buffer
+          vertBuff.push_back(p1[1]);
+          vertBuff.push_back(p1[2]);
+          vertBuff.push_back(p2[0]);
+          vertBuff.push_back(p2[1]);
+          vertBuff.push_back(p2[2]);
 
-      for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
-        vec3 pos = get_bezier_point(t);
-        vec3 tan = get_bezier_tangent(t);
-        vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
-        /*vec3 pos = std::get<0>(point_norm);
-        vec3 norm = std::get<1>(point_norm);*/
-        norm = norm.normalize() * TRACK_WIDTH * 0.5f; // Create track radius
-        vec3 p1 = pos - norm; // Calculate border vertex locations
-        vec3 p2 = pos + norm;
-        vertBuff.push_back(p1[0]); // Add vertex data (3 Floats (x, y and y)) to the buffer
-        vertBuff.push_back(p1[1]);
-        vertBuff.push_back(p1[2]);
-        vertBuff.push_back(p2[0]);
-        vertBuff.push_back(p2[1]);
-        vertBuff.push_back(p2[2]);
-
-        debugBezBuff.push_back(pos);
+          debugBezBuff.push_back(pos);
+        }
       }
-
     }
 
-    vec3 get_bezier_point(float t) {
+    vec3 get_bezier_point(float t, int iter) {
      
       vec3 point(0, 0, 0);
 
@@ -103,21 +103,26 @@ namespace octet {
       float u = (1 - t);
       float uu = u * (1 - t);
       float uuu = uu *(1 - t);
+
+      //Quadratic Bezier
+      //point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
+      //point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+
       //formula of Cubic Bezier 
-      point[0] = uuu * waypoints[0][0] + 3 * uu * t * waypoints[1][0] + 3 * u * tt* waypoints[2][0] + ttt* waypoints[3][0];
-      point[1] = uuu * waypoints[0][1] + 3 * uu * t * waypoints[1][1] + 3 * u * tt* waypoints[2][1] + ttt* waypoints[3][1];
-     // point[2] = uuu * waypoints[0][2] + 3 * uu * t * waypoints[1][2] + 3 * u * tt* waypoints[2][2] + ttt* waypoints[3][2];
-    //  point[3] = uuu * waypoints[0][3] + 3 * uu * t * waypoints[1][3] + 3 * u * tt * waypoints[2][3] + ttt * waypoints[3][3];
+      point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt* waypoints[iter + 3][0];
+      point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* waypoints[iter + 3][1];
+      //point[2] = uuu * waypoints[0][2] + 3 * uu * t * waypoints[1][2] + 3 * u * tt* waypoints[2][2] + ttt* waypoints[3][2];
+      //point[3] = uuu * waypoints[0][3] + 3 * uu * t * waypoints[1][3] + 3 * u * tt * waypoints[2][3] + ttt * waypoints[3][3];
 
       return point;
 
     }
-    vec3 get_bezier_tangent(float t) {
+    vec3 get_bezier_tangent(float t, int iter) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
 
-      vec3 P11 = waypoints[0] + t * (waypoints[1] - waypoints[2]);
-      vec3 P12 = waypoints[1] + t * (waypoints[2] - waypoints[1]);
+      vec3 P11 = waypoints[iter] + t * (waypoints[iter + 1] - waypoints[iter + 2]);
+      vec3 P12 = waypoints[iter + 1] + t * (waypoints[iter + 2] - waypoints[iter + 1]);
       //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
 
       vec3 tan = P12 - P11;
