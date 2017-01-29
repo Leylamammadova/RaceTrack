@@ -14,6 +14,9 @@ namespace octet {
   class example_box : public app {
     bool debug_mode = true;
 
+    //quadratic = 2, cubic = 3
+    int curve_type = 3;
+
 
     // scene for drawing box
     ref<visual_scene> app_scene;
@@ -66,12 +69,13 @@ namespace octet {
       waypoints = pg.generate_random_points(num_points);
 
       float TRACK_WIDTH = 0.1f;
-      float DETAIL_STEP = 0.00001f;
+      float DETAIL_STEP = 0.1f;
 
       debugBezBuff = std::vector<vec3>();
 
+      
       vertBuff = std::vector<float>();
-      for (int i = 0; i < (waypoints.size() - 3);) {
+      for (int i = 0; i <= (waypoints.size() - curve_type);) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
           vec3 pos = get_bezier_point(t, i);
           vec3 tan = get_bezier_tangent(t, i);
@@ -90,7 +94,7 @@ namespace octet {
 
           debugBezBuff.push_back(pos);
         }
-        i += 2;
+        i += curve_type;
       }
     }
 
@@ -105,16 +109,32 @@ namespace octet {
       float uu = u * (1 - t);
       float uuu = uu *(1 - t);
 
-      //Quadratic Bezier
-      point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
-      point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
-
-      //formula of Cubic Bezier 
-      //point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt* waypoints[iter + 3][0];
-      //point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* waypoints[iter + 3][1];
-      //point[2] = uuu * waypoints[0][2] + 3 * uu * t * waypoints[1][2] + 3 * u * tt* waypoints[2][2] + ttt* waypoints[3][2];
-      //point[3] = uuu * waypoints[0][3] + 3 * uu * t * waypoints[1][3] + 3 * u * tt * waypoints[2][3] + ttt * waypoints[3][3];
-
+      if (iter == (waypoints.size() - curve_type)) {
+        if (curve_type == 2) {
+          //Quadratic Bezier
+          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[0][0] + tt * waypoints[1][0];
+          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[0][1] + tt * waypoints[1][1];
+        }
+        else if (curve_type == 3) {
+          //formula of Cubic Bezier 
+          point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[0][0] + 3 * u * tt* waypoints[1][0] + ttt* waypoints[2][0];
+          point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[0][1] + 3 * u * tt* waypoints[1][1] + ttt* waypoints[2][1];
+          //point[2] = uuu * waypoints[iter][2] + 3 * uu * t * waypoints[0][2] + 3 * u * tt* waypoints[1][2] + ttt* waypoints[2][2];
+        }
+      }
+      else {
+        if (curve_type == 2) {
+          //Quadratic Bezier
+          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
+          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+        }
+        else if (curve_type == 3) {
+          //formula of Cubic Bezier 
+          point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt* waypoints[iter + 3][0];
+          point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* waypoints[iter + 3][1];
+          //point[2] = uuu * waypoints[iter][2] + 3 * uu * t * waypoints[iter + 1][2] + 3 * u * tt* waypoints[iter + 2][2] + ttt* waypoints[iter + 3][2];
+        }
+      }
       return point;
 
     }
@@ -122,11 +142,17 @@ namespace octet {
     vec3 get_bezier_tangent(float t, int iter) {
       //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
-
-      vec3 P11 = waypoints[iter] + t * (waypoints[iter + 1] - waypoints[iter + 2]);
-      vec3 P12 = waypoints[iter + 1] + t * (waypoints[iter + 2] - waypoints[iter + 1]);
-      //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
-
+      vec3 P11, P12;
+      if (iter == (waypoints.size() - curve_type)) {
+        P11 = waypoints[iter] + t * (waypoints[0] - waypoints[1]);
+        P12 = waypoints[iter + 1] + t * (waypoints[1] - waypoints[0]);
+        //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
+      }
+      else {
+        P11 = waypoints[iter] + t * (waypoints[iter + 1] - waypoints[iter + 2]);
+        P12 = waypoints[iter + 1] + t * (waypoints[iter + 2] - waypoints[iter + 1]);
+        //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
+      }
       vec3 tan = P12 - P11;
       return tan;
     }
