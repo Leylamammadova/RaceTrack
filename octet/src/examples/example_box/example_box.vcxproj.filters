@@ -428,6 +428,7 @@
       <Filter>containers</Filter>
     </ClInclude>
     <ClInclude Include="example_box.h" />
+    <ClInclude Include="points_generator.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\mesh_builder.inl">
