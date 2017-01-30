@@ -75,18 +75,19 @@ namespace octet {
 
       
       vertBuff = std::vector<float>();
-      for (int i = 0; i <= (waypoints.size() - curve_type);) {
+      for (int i = 0; i <= (waypoints.size() - curve_type); i += curve_type) {
+
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
+
           vec3 pos = get_bezier_point(t, i);
           vec3 tan = get_bezier_tangent(t, i);
           vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
-          /*vec3 pos = std::get<0>(point_norm);
-          vec3 norm = std::get<1>(point_norm);*/
+
           norm = norm.normalize() * TRACK_WIDTH * 0.5f; // Create track radius
           vec3 p1 = pos - norm; // Calculate border vertex locations
           vec3 p2 = pos + norm;
           vertBuff.push_back(p1[0]); // Add vertex data (3 Floats (x, y and y)) to the buffer
-          vertBuff.push_back(p1[1]);
+          vertBuff.push_back(p1[1]); // The buffer is used by opengl to render the triangles
           vertBuff.push_back(p1[2]);
           vertBuff.push_back(p2[0]);
           vertBuff.push_back(p2[1]);
@@ -94,7 +95,6 @@ namespace octet {
 
           debugBezBuff.push_back(pos);
         }
-        i += curve_type;
       }
     }
 
@@ -177,6 +177,22 @@ namespace octet {
       if (debug_mode) {
         draw_debug();
       }else{
+        // openGL takes in an array of floats. Every 3 floats represents one vertex. 
+        // Bellow is code telling opengl what float vertex data to use.
+        // openGL reads the raw bytes in memory, so we need to tell it how many bytes per value (in this case float 4 bytes) 
+        // and we also need to tell it how many values per vertex (in this case 3 for x, y and z)
+        // We then tell openGL what shader program to use to render the mesh 
+        // and we specify the render mode, here, GL_TRIANGLE_STRIP tells opengl to make the vertex data connect up into a mesh like this:
+        //  The numbers represent the vertices, each vertex is three floats wide (z,y,z)
+        //
+        //   0-----2-----4
+        //   |    /|    /|
+        //   |   / |   / |
+        //   |  /  |  /  |
+        //   | /   | /   |
+        //   |/    |/    |
+        //   1-----3-----5
+
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
         glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
