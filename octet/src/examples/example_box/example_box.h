@@ -108,12 +108,15 @@ namespace octet {
       float u = (1 - t);
       float uu = u * (1 - t);
       float uuu = uu *(1 - t);
+      float half = 0.5;
 
       if (iter == (waypoints.size() - curve_type)) {
         if (curve_type == 2) {
           //Quadratic Bezier
-          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * waypoints[0][0];
-          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[1][1] + tt * waypoints[0][1];
+         // point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * waypoints[0][0];
+       //   point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[1][1] + tt * waypoints[0][1];
+       point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt +3 * ttt) * waypoints[0][0] + t * (1 + 4 * t - 3 * tt ) * waypoints[1][0] - tt * u * waypoints[2][0]);
+       point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[0][1] + t * (1 + 4 * t - 3 * tt) * waypoints[1][1] - tt * u * waypoints[2][1]);
         }
         else if (curve_type == 3) {
           //formula of Cubic Bezier 
@@ -125,8 +128,10 @@ namespace octet {
       else {
         if (curve_type == 2) {
           //Quadratic Bezier
-          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
-          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+        //  point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
+        //  point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+          point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][0] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][0] - tt * u * waypoints[iter + 3][0]);
+          point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][1] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][1] - tt * u * waypoints[iter + 3][1]);
         }
         else if (curve_type == 3) {
           //formula of Cubic Bezier 
