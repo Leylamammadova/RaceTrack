@@ -15,7 +15,7 @@ namespace octet {
     bool debug_mode = true;
 
     //quadratic = 2, cubic = 3
-    int curve_type = 3;
+    int curve_type = 2;
 
 
     // scene for drawing box
@@ -69,7 +69,7 @@ namespace octet {
       waypoints = pg.generate_random_points(num_points);
 
       float TRACK_WIDTH = 0.1f;
-      float DETAIL_STEP = 0.1f;
+      float DETAIL_STEP = 0.001f;
 
       debugBezBuff = std::vector<vec3>();
 
@@ -112,8 +112,8 @@ namespace octet {
       if (iter == (waypoints.size() - curve_type)) {
         if (curve_type == 2) {
           //Quadratic Bezier
-          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[0][0] + tt * waypoints[1][0];
-          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[0][1] + tt * waypoints[1][1];
+          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * waypoints[0][0];
+          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[1][1] + tt * waypoints[0][1];
         }
         else if (curve_type == 3) {
           //formula of Cubic Bezier 
@@ -144,12 +144,12 @@ namespace octet {
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
       vec3 P11, P12;
       if (iter == (waypoints.size() - curve_type)) {
-        P11 = waypoints[iter] + t * (waypoints[0] - waypoints[1]);
+        P11 = waypoints[iter] + t * (waypoints[1] - waypoints[0]);
         P12 = waypoints[iter + 1] + t * (waypoints[1] - waypoints[0]);
         //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
       }
       else {
-        P11 = waypoints[iter] + t * (waypoints[iter + 1] - waypoints[iter + 2]);
+        P11 = waypoints[iter] + t * (waypoints[iter + 1] - waypoints[iter]);
         P12 = waypoints[iter + 1] + t * (waypoints[iter + 2] - waypoints[iter + 1]);
         //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
       }
