@@ -12,29 +12,33 @@
 namespace octet {
   /// Scene containing a box with octet.
   class example_box : public app {
+  private:
 
     enum curve_mode {
       QUADRATIC_BEZIER = 0,
       CUBIC_BEZIER,
       CATMULL_ROM
     };
-
     curve_mode current_curve;
 
     bool debug_mode = true;
 
-    //quadratic = 2, cubic = 3
-    int curve_step = 2;
-
-
-    // scene for drawing box
-    ref<visual_scene> app_scene;
+    //// scene for drawing box
+    //ref<visual_scene> app_scene;
 
     std::vector<std::tuple<vec3, vec3>> input;
     std::vector<float> vertBuff;
     std::vector<vec3> debugBezBuff; // Used to show the actual bezier path with debug lines
     GLuint vertex_buffer;
     shader road_shader;
+
+    points_generator pg;
+    std::vector<vec3> waypoints;
+
+    float TRACK_WIDTH = 0.1f;
+    float DETAIL_STEP = 0.01f;
+
+
 
     // Used to load shader files into a string varaible
     std::string load_file(const char* file_name) {
@@ -52,46 +56,26 @@ namespace octet {
       return out;
     }
 
-    points_generator pg;
-    int num_points;
-    std::vector<vec3> waypoints;
+    void refresh_curve() {
 
-  public:
-    /// this is called when we construct the class before everything is initialised.
-    example_box(int argc, char **argv) : app(argc, argv) {
-    }
-
-    /// this is called once OpenGL is initialized
-    void app_init() {
-      app_scene = new visual_scene();
-      app_scene->create_default_camera_and_lights();
-
-      current_curve = QUADRATIC_BEZIER;
-
-      glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
-      road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
+      int curve_step = 0;
 
       switch (current_curve) {
-        case QUADRATIC_BEZIER:
-          curve_step = 2;
-          break;
-        case CUBIC_BEZIER:
-          curve_step = 3;
-          break;
-        case CATMULL_ROM:
-          curve_step = 1;
-          break;
+      case QUADRATIC_BEZIER:
+        curve_step = 2;
+        break;
+      case CUBIC_BEZIER:
+        curve_step = 3;
+        break;
+      case CATMULL_ROM:
+        curve_step = 1;
+        break;
       }
 
-      // initialise random
-      std::srand(std::time(0));
-
       // create points for curves
-      num_points = curve_step * 10 + 1;
+      int num_points = curve_step * 10 + 1;
+      waypoints = std::vector<vec3>();
       waypoints = pg.generate_random_points(num_points);
-
-      float TRACK_WIDTH = 0.1f;
-      float DETAIL_STEP = 0.01f;
 
       debugBezBuff = std::vector<vec3>();
       vertBuff = std::vector<float>();
@@ -119,11 +103,10 @@ namespace octet {
         }
       }
 
-      printf("Created curve with %d points", num_points);
+      printf("Created curve with %d points\n", num_points);
     }
 
     vec3 get_bezier_point(float t, int iter) {
-
       vec3 point(0, 0, 0);
 
       //sorted some variables 
@@ -133,9 +116,10 @@ namespace octet {
       float uu = u * (1 - t);
       float uuu = uu *(1 - t);
 
+      // Repoints to the front of the waypoints list if iter + n exceeds vector bounds
       int idx = iter;
       int idx1 = iter + 1;
-      int idx2 = iter + 2; 
+      int idx2 = iter + 2;
       int idx3 = iter + 3;
       if ((waypoints.size() <= (iter))) {
         idx = 0;
@@ -143,12 +127,12 @@ namespace octet {
         idx2 = 2;
         idx3 = 3;
       }
-      else if ((waypoints.size() <= (iter+1))) {
+      else if ((waypoints.size() <= (iter + 1))) {
         idx1 = 0;
         idx2 = 1;
         idx3 = 2;
       }
-      else if ((waypoints.size() <= (iter+2))) {
+      else if ((waypoints.size() <= (iter + 2))) {
         idx2 = 0;
         idx3 = 1;
       }
@@ -156,131 +140,68 @@ namespace octet {
         idx3 = 0;
       }
 
-      if ((waypoints.size() <= (iter))) {
-        printf("Lookup vertex outside of waypoints range\n");
-      }
-      else if ((waypoints.size() <= (iter + 1))) {
-        printf("Lookup vertex outside of waypoints range + 1\n");
-      }
-      else if ((waypoints.size() <= (iter + 2))) {
-        printf("Lookup vertex outside of waypoints range + 2\n");
-      }
-      else if ((waypoints.size() <= (iter + 3))) {
-        printf("Lookup vertex outside of waypoints range + 3\n");
-      }
-
       switch (current_curve) {
 
-        case QUADRATIC_BEZIER:
+      case QUADRATIC_BEZIER:
 
-          point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * 0.5f *(waypoints[idx1][0] + waypoints[idx2][0]);
-          point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * 0.5f *(waypoints[idx1][1] + waypoints[idx2][1]);
+        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * 0.5f *(waypoints[idx1][0] + waypoints[idx2][0]);
+        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * 0.5f *(waypoints[idx1][1] + waypoints[idx2][1]);
 
-          break;
+        break;
 
-        case CUBIC_BEZIER:
+      case CUBIC_BEZIER:
 
-          point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * 0.5f*(waypoints[idx2][0] + waypoints[idx3][0]);
-          point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * 0.5f*(waypoints[idx2][1] + waypoints[idx3][1]);
+        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * 0.5f*(waypoints[idx2][0] + waypoints[idx3][0]);
+        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * 0.5f*(waypoints[idx2][1] + waypoints[idx3][1]);
 
-          break;
+        break;
 
-        case CATMULL_ROM:
-          
-          point[0] = 0.5f * ((-t) * uu * waypoints[idx][0] + (2 - 5 * tt + 3 * ttt) * waypoints[idx1][0] + t * (1 + 4 * t - 3 * tt) * waypoints[idx2][0] - tt * u * waypoints[idx3][0]);
-          point[1] = 0.5f * ((-t) * uu * waypoints[idx][1] + (2 - 5 * tt + 3 * ttt) * waypoints[idx1][1] + t * (1 + 4 * t - 3 * tt) * waypoints[idx2][1] - tt * u * waypoints[idx3][1]);
+      case CATMULL_ROM:
 
-          break;
+        point[0] = 0.5f * ((-t) * uu * waypoints[idx][0] + (2 - 5 * tt + 3 * ttt) * waypoints[idx1][0] + t * (1 + 4 * t - 3 * tt) * waypoints[idx2][0] - tt * u * waypoints[idx3][0]);
+        point[1] = 0.5f * ((-t) * uu * waypoints[idx][1] + (2 - 5 * tt + 3 * ttt) * waypoints[idx1][1] + t * (1 + 4 * t - 3 * tt) * waypoints[idx2][1] - tt * u * waypoints[idx3][1]);
+
+        break;
       }
 
       return point;
     }
 
+  public:
+    /// this is called when we construct the class before everything is initialised.
+    example_box(int argc, char **argv) : app(argc, argv) {
+    }
 
-    //  if (iter == (waypoints.size() - curve_step)) {
-    //    if (curve_step == 2) {
-    //      vec3 endpoint((waypoints[iter] + waypoints[0]) / 2);
-    //      //Quadratic Bezier
-    //      point[0] = uu * waypoints[iter][0] + 2 * u * t * endpoint[0] + tt * waypoints[0][0];
-    //      point[1] = uu * waypoints[iter][1] + 2 * u * t * endpoint[1] + tt * waypoints[0][1];
+    /// this is called once OpenGL is initialized
+    void app_init() {
 
-    //       //Catmull-Rom
-    //      point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt +3 * ttt) * waypoints[0][0] + t * (1 + 4 * t - 3 * tt ) * waypoints[1][0] - tt * u * waypoints[2][0]);
-    //      point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[0][1] + t * (1 + 4 * t - 3 * tt) * waypoints[1][1] - tt * u * waypoints[2][1]);
-    //    }
-    //    else if (curve_step == 3) {
-    //      //formula of Cubic Bezier 
-    //      point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[0][0] + 3 * u * tt* waypoints[1][0] + ttt*half*(waypoints[1][0] + waypoints[iter][0]);
-    //      point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[0][1] + 3 * u * tt* waypoints[1][1] + ttt*half*(waypoints[1][1] + waypoints[iter][1]);
-    //      //point[2] = uuu * waypoints[iter][2] + 3 * uu * t * waypoints[0][2] + 3 * u * tt* waypoints[1][2] + ttt* waypoints[2][2];
-    //    }
-    //  }
-    //  else {
-    //    if (curve_step == 2) {
-    //      //Quadratic Bezier
-    //    // point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * half *(waypoints[iter + 1][0] + waypoints[iter + 2][0]);
-    //    // point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * half *(waypoints[iter + 1][1] + waypoints[iter + 2][1]);
+      pg = points_generator();
 
-    //   // point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
-    //  //  point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+      current_curve = CUBIC_BEZIER;
 
-    //    //Catmul-Rom
-    //      point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][0] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][0] - tt * u * waypoints[iter + 3][0]);
-    //      point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][1] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][1] - tt * u * waypoints[iter + 3][1]);
-    //    }
-    //    else if (curve_step == 3) {
-    //      //formula of Cubic Bezier 
-    //      point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt * half*(waypoints[iter + 2][0] + waypoints[iter+3][0]);
-    //      point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* half*(waypoints[iter + 2][1] + waypoints[iter+3][1]);
-    //      //point[2] = uuu * waypoints[iter][2] + 3 * uu * t * waypoints[iter + 1][2] + 3 * u * tt* waypoints[iter + 2][2] + ttt* waypoints[iter + 3][2];
-    //    }
-    //  }
-    //  return point;
+      glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
+      road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
 
-    //}
-
-
-    // DEPRECATED USING    get_bezier_point(t + 0.01f, i) - get_bezier_point(t, i)  TO CALCULATE TANGENT
-
-    //vec3 get_bezier_tangent(float t, int iter) {
-    //  //P(1)1 = (1 − t)P0 + tP1   (= P0 + t(P1 − P0))
-    //  //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
-    //  vec3 P11, P12;
-    //  if (iter == (waypoints.size() - curve_step)) {
-    //    vec3 endpoint((waypoints[iter] + waypoints[0]) / 2);
-    //    P11 = waypoints[iter] + t * (waypoints[0] - endpoint);
-    //    P12 = waypoints[iter + 1] + t * (waypoints[0] - endpoint);
-    //    //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
-    //  }
-    //  else {
-    //    P11 = waypoints[iter] + t * (waypoints[iter + 1] - waypoints[iter]);
-    //    P12 = waypoints[iter + 1] + t * (waypoints[iter + 2] - waypoints[iter + 1]);
-    //    //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
-    //  }
-    //  vec3 tan = P12 - P11;
-    //  return tan;
-    //}
-
-
+      refresh_curve();
+    }
 
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       int vx = 0, vy = 0;
       get_viewport_size(vx, vy);
-      app_scene->begin_render(vx, vy);
 
+      if (is_key_going_up(key_f5)) {
+        refresh_curve();
+      }
 
-      // update matrices. assume 30 fps.
-      app_scene->update(1.0f / 30);
-
-      // draw the scene
-      app_scene->render((float)vx / vy);
 
       if (debug_mode) {
+        glClearColor(0.5f, 0.5f, 0.5f, 1); // Grey colour
         draw_debug();
       }else{
+        glClearColor(0.3f, 0.67f, 0.28f, 1); // Grass green colour
         // openGL takes in an array of floats. Every 3 floats represents one vertex. 
         // Bellow is code telling opengl what float vertex data to use.
         // openGL reads the raw bytes in memory, so we need to tell it how many bytes per value (in this case float 4 bytes) 
@@ -298,7 +219,7 @@ namespace octet {
         //   1-----3-----5
 
         glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-        glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_DYNAMIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
         glEnableVertexAttribArray(attribute_pos);
         glUseProgram(road_shader.get_program());
@@ -310,10 +231,18 @@ namespace octet {
     void draw_debug() {
       /* https://en.wikibooks.org/wiki/OpenGL_Programming/GLStart/Tut3 */
 
-      // Draw the waypoints
+      // Draw the start and end waypoints in yellow
       glUseProgram(0);
-      glColor3f(1.0f, 0.0f, 0.0f); //red colour
+      glColor3f(1.0f, 1.0f, 0.0f); //yellow colour
       glPointSize(5.0f);//set point size to 10 pixels
+      glBegin(GL_POINTS); //starts drawing of points
+      glVertex3f(waypoints[0][0], waypoints[0][1], waypoints[0][2]);
+      glVertex3f(waypoints[waypoints.size() - 1][0], waypoints[waypoints.size() - 1][1], waypoints[waypoints.size() - 1][2]);
+      glEnd();
+
+      // Draw the waypoints
+      glColor3f(1.0f, 0.0f, 0.0f); //red colour
+      
       glBegin(GL_POINTS); //starts drawing of points
       for (vec3 &point : waypoints) {
         glVertex3f(point[0], point[1], point[2]);
