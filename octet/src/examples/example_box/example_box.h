@@ -38,7 +38,7 @@ namespace octet {
     float TRACK_WIDTH = 0.1f;
     float DETAIL_STEP = 0.01f;
     int track_length = 10;
-
+    int curve_step;
 
 
     // Used to load shader files into a string varaible
@@ -58,9 +58,6 @@ namespace octet {
     }
 
     void refresh_curve() {
-
-      int curve_step = 0;
-
       switch (current_curve) {
       case QUADRATIC_BEZIER:
         curve_step = 2;
@@ -110,10 +107,10 @@ namespace octet {
     vec3 get_bezier_point(float t, int iter) {
       vec3 point(0, 0, 0);
 
+      // Glitch fix
       if (t > 1.0f) { 
-        printf("Tangent calculation glitching over into next points group\n"); 
         t = t - 1.0f;
-        iter++;
+        iter += curve_step;
       }
 
       //sorted some variables 
