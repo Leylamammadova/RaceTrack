@@ -37,6 +37,7 @@ namespace octet {
 
     float TRACK_WIDTH = 0.1f;
     float DETAIL_STEP = 0.01f;
+    int track_length = 10;
 
 
 
@@ -73,7 +74,7 @@ namespace octet {
       }
 
       // create points for curves
-      int num_points = curve_step * 10 + 1;
+      int num_points = curve_step * track_length + 1;
       waypoints = std::vector<vec3>();
       waypoints = pg.generate_random_points(num_points);
 
@@ -83,7 +84,7 @@ namespace octet {
       for (int i = 0; i < waypoints.size(); i += curve_step) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
           vec3 pos = get_bezier_point(t, i);
-          vec3 segment_pos = get_bezier_point(t + DETAIL_STEP * 0.1f, i);
+          vec3 segment_pos = get_bezier_point(t + DETAIL_STEP * 0.01f, i);
           vec3 tan = segment_pos - pos;
           vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
 
@@ -109,12 +110,18 @@ namespace octet {
     vec3 get_bezier_point(float t, int iter) {
       vec3 point(0, 0, 0);
 
+      if (t > 1.0f) { 
+        printf("Tangent calculation glitching over into next points group\n"); 
+        t = t - 1.0f;
+        iter++;
+      }
+
       //sorted some variables 
       float tt = t * t;
       float ttt = t * t * t;
       float u = (1 - t);
-      float uu = u * (1 - t);
-      float uuu = uu *(1 - t);
+      float uu = u * u;
+      float uuu = u * u * u;
 
       // Repoints to the front of the waypoints list if iter + n exceeds vector bounds
       int idx = iter;
@@ -178,6 +185,7 @@ namespace octet {
       pg = points_generator();
 
       current_curve = CUBIC_BEZIER;
+      track_length = 10;
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
       road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
@@ -195,7 +203,32 @@ namespace octet {
       if (is_key_going_up(key_f5)) {
         refresh_curve();
       }
+      if (is_key_going_up(key_f1)) {
+        current_curve = QUADRATIC_BEZIER;
+        refresh_curve();
+      }
+      if (is_key_going_up(key_f2)) {
+        current_curve = CUBIC_BEZIER;
+        refresh_curve();
+      }
+      if (is_key_going_up(key_f3)) {
+        current_curve = CATMULL_ROM;
+        refresh_curve();
+      }
 
+      if (is_key_going_up(key_space)) {
+        debug_mode = !debug_mode;
+      }
+
+      if (is_key_going_up(key_up)) {
+        track_length++;
+        refresh_curve();
+      }
+
+      if (is_key_going_up(key_down)) {
+        track_length--;
+        refresh_curve();
+      }
 
       if (debug_mode) {
         glClearColor(0.5f, 0.5f, 0.5f, 1); // Grey colour

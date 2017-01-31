@@ -1,3 +1,21 @@
+# Race Track
+
+Key Bindings:
+
+Curve Modes:
+
+F1 : QUADRATIC_BEZIER
+F2 : CUBIC_BEZIER
+F3 : CATMULL_ROM
+
+Hotkeys:
+
+F5 : Refresh
+Space_bar : Toggle debug mode
+up arrow : Increase track length
+down arrow : decrease track length
+
+
 # octet
 
 Octet is a framework for teaching OpenGL and the rudiments of game programming such
