@@ -64,6 +64,7 @@ namespace octet {
       // initialise random
       //std::srand(std::time(0));
       std::srand(0);
+
       // create points for curves
       num_points = 28;
       waypoints = pg.generate_random_points(num_points);
@@ -111,9 +112,10 @@ namespace octet {
 
       if (iter == (waypoints.size() - curve_type)) {
         if (curve_type == 2) {
+          vec3 endpoint((waypoints[iter] + waypoints[0]) / 2);
           //Quadratic Bezier
-          point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * waypoints[0][0];
-          point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[1][1] + tt * waypoints[0][1];
+          point[0] = uu * waypoints[iter][0] + 2 * u * t * endpoint[0] + tt * waypoints[0][0];
+          point[1] = uu * waypoints[iter][1] + 2 * u * t * endpoint[1] + tt * waypoints[0][1];
         }
         else if (curve_type == 3) {
           //formula of Cubic Bezier 
@@ -144,8 +146,9 @@ namespace octet {
       //P(1)2 = (1 − t)P1 + tP2   (= P1 + t(P2 - P1))
       vec3 P11, P12;
       if (iter == (waypoints.size() - curve_type)) {
-        P11 = waypoints[iter] + t * (waypoints[1] - waypoints[0]);
-        P12 = waypoints[iter + 1] + t * (waypoints[1] - waypoints[0]);
+        vec3 endpoint((waypoints[iter] + waypoints[0]) / 2);
+        P11 = waypoints[iter] + t * (waypoints[0] - endpoint);
+        P12 = waypoints[iter + 1] + t * (waypoints[0] - endpoint);
         //vec3 P13 = waypoints[2] + t * (waypoints[3] - waypoints[2]);
       }
       else {
