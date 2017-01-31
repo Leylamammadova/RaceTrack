@@ -62,14 +62,14 @@ namespace octet {
       road_shader.init(load_file("shaders/road.vert").c_str(), load_file("shaders/road.frag").c_str()); // loads, compiles and links our shader programs
 
       // initialise random
-      //std::srand(std::time(0));
-      std::srand(0);
+      std::srand(std::time(0));
+     // std::srand(0);
       // create points for curves
       num_points = 28;
       waypoints = pg.generate_random_points(num_points);
 
       float TRACK_WIDTH = 0.1f;
-      float DETAIL_STEP = 0.001f;
+      float DETAIL_STEP = 0.01f;
 
       debugBezBuff = std::vector<vec3>();
 
@@ -113,30 +113,40 @@ namespace octet {
       if (iter == (waypoints.size() - curve_type)) {
         if (curve_type == 2) {
           //Quadratic Bezier
-         // point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * waypoints[0][0];
+       //   point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * waypoints[0][0];
        //   point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[1][1] + tt * waypoints[0][1];
-       point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt +3 * ttt) * waypoints[0][0] + t * (1 + 4 * t - 3 * tt ) * waypoints[1][0] - tt * u * waypoints[2][0]);
-       point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[0][1] + t * (1 + 4 * t - 3 * tt) * waypoints[1][1] - tt * u * waypoints[2][1]);
+
+       //   point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[1][0] + tt * half * (waypoints[iter][0] + waypoints[1][0]);
+       //   point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[1][1] + tt * half * (waypoints[iter][1] + waypoints[1][1]);
+
+       //Catmull-Rom
+      point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt +3 * ttt) * waypoints[0][0] + t * (1 + 4 * t - 3 * tt ) * waypoints[1][0] - tt * u * waypoints[2][0]);
+      point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[0][1] + t * (1 + 4 * t - 3 * tt) * waypoints[1][1] - tt * u * waypoints[2][1]);
         }
         else if (curve_type == 3) {
           //formula of Cubic Bezier 
-          point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[0][0] + 3 * u * tt* waypoints[1][0] + ttt* waypoints[2][0];
-          point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[0][1] + 3 * u * tt* waypoints[1][1] + ttt* waypoints[2][1];
+          point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[0][0] + 3 * u * tt* waypoints[1][0] + ttt*half*(waypoints[1][0] + waypoints[iter][0]);
+          point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[0][1] + 3 * u * tt* waypoints[1][1] + ttt*half*(waypoints[1][1] + waypoints[iter][1]);
           //point[2] = uuu * waypoints[iter][2] + 3 * uu * t * waypoints[0][2] + 3 * u * tt* waypoints[1][2] + ttt* waypoints[2][2];
         }
       }
       else {
         if (curve_type == 2) {
           //Quadratic Bezier
-        //  point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
-        //  point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
-          point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][0] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][0] - tt * u * waypoints[iter + 3][0]);
+        // point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * half *(waypoints[iter + 1][0] + waypoints[iter + 2][0]);
+        // point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * half *(waypoints[iter + 1][1] + waypoints[iter + 2][1]);
+
+       // point[0] = uu * waypoints[iter][0] + 2 * u * t * waypoints[iter + 1][0] + tt * waypoints[iter + 2][0];
+      //  point[1] = uu * waypoints[iter][1] + 2 * u * t * waypoints[iter + 1][1] + tt * waypoints[iter + 2][1];
+
+        //Catmul-Rom
+        point[0] = half * ((-t) * uu * waypoints[iter][0] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][0] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][0] - tt * u * waypoints[iter + 3][0]);
           point[1] = half * ((-t) * uu * waypoints[iter][1] + (2 - 5 * tt + 3 * ttt) * waypoints[iter + 1][1] + t * (1 + 4 * t - 3 * tt) * waypoints[iter + 2][1] - tt * u * waypoints[iter + 3][1]);
         }
         else if (curve_type == 3) {
           //formula of Cubic Bezier 
-          point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt* waypoints[iter + 3][0];
-          point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* waypoints[iter + 3][1];
+          point[0] = uuu * waypoints[iter][0] + 3 * uu * t * waypoints[iter + 1][0] + 3 * u * tt* waypoints[iter + 2][0] + ttt * half*(waypoints[iter + 2][0] + waypoints[iter+3][0]);
+          point[1] = uuu * waypoints[iter][1] + 3 * uu * t * waypoints[iter + 1][1] + 3 * u * tt* waypoints[iter + 2][1] + ttt* half*(waypoints[iter + 2][1] + waypoints[iter+3][1]);
           //point[2] = uuu * waypoints[iter][2] + 3 * uu * t * waypoints[iter + 1][2] + 3 * u * tt* waypoints[iter + 2][2] + ttt* waypoints[iter + 3][2];
         }
       }
