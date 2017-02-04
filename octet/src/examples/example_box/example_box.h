@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <ctime>
 #include "points_generator.h"
+#include "perlin.h"
 
 
 namespace octet {
@@ -32,6 +33,7 @@ namespace octet {
     GLuint vertex_buffer;
     shader road_shader;
 
+    perlin perlin_noise;
     points_generator pg;
     std::vector<vec3> waypoints;
 
@@ -70,10 +72,13 @@ namespace octet {
         break;
       }
 
+      perlin_noise = perlin();
+
       // create points for curves
       int num_points = curve_step * track_length + 1;
       waypoints = std::vector<vec3>();
       waypoints = pg.generate_random_points(num_points);
+
 
       debugBezBuff = std::vector<vec3>();
       vertBuff = std::vector<float>();
@@ -85,23 +90,29 @@ namespace octet {
           vec3 tan = segment_pos - pos;
           vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
 
+          double n = (float)perlin_noise.noise((double)pos[0], (double)pos[1], 0.0);
+
           norm = norm.normalize() * TRACK_WIDTH * 0.5f; // Create track radius
 
           vec3 p1 = pos - norm; // Calculate border vertex locations
           vec3 p2 = pos + norm;
 
+          printf("%f\n", n);
+
           vertBuff.push_back(p1[0]); // Add vertex data (3 Floats (x, y and y)) to the buffer
           vertBuff.push_back(p1[1]); // The buffer is used by opengl to render the triangles
-          vertBuff.push_back(p1[2]);
+          vertBuff.push_back(n); // Use the perlin height at the center of the track for this point along the track.
           vertBuff.push_back(p2[0]);
           vertBuff.push_back(p2[1]);
-          vertBuff.push_back(p2[2]);
+          vertBuff.push_back(n);
 
           debugBezBuff.push_back(pos);
         }
       }
 
-      printf("Created curve with %d points\n", num_points);
+      printf("Curve with %d points\n", num_points);
+
+      printf("Mesh with %d vertices\n", (int)vertBuff.size()/3);
     }
 
     vec3 get_bezier_point(float t, int iter) {
@@ -109,6 +120,7 @@ namespace octet {
 
       // Glitch fix
       if (t > 1.0f) { 
+        //printf("Tangent calculation glitching over into next points group\n"); 
         t = t - 1.0f;
         iter += curve_step;
       }
@@ -148,15 +160,15 @@ namespace octet {
 
       case QUADRATIC_BEZIER:
 
-        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * 0.5f *(waypoints[idx1][0] + waypoints[idx2][0]);
-        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * 0.5f *(waypoints[idx1][1] + waypoints[idx2][1]);
+        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * waypoints[idx2][0];
+        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * waypoints[idx2][1];
 
         break;
 
       case CUBIC_BEZIER:
 
-        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * 0.5f*(waypoints[idx2][0] + waypoints[idx3][0]);
-        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * 0.5f*(waypoints[idx2][1] + waypoints[idx3][1]);
+        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * waypoints[idx3][0];
+        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * waypoints[idx3][1];
 
         break;
 
@@ -178,7 +190,7 @@ namespace octet {
 
     /// this is called once OpenGL is initialized
     void app_init() {
-
+      perlin_noise = perlin();
       pg = points_generator();
 
       current_curve = CUBIC_BEZIER;
@@ -287,7 +299,16 @@ namespace octet {
         glVertex3f(debugBezBuff[i+1][0], debugBezBuff[i+1][1], debugBezBuff[i+1][2]);
       }
       glEnd();//end drawing of Line_strip
-      
+
+
+      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+      glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+      glEnableVertexAttribArray(attribute_pos);
+      glUseProgram(road_shader.get_program());
+      glDrawArrays(GL_LINE_STRIP, 0, vertBuff.size() / 3);
+      glBindVertexArray(attribute_pos);
+
     }
   };
 }
