@@ -202,8 +202,34 @@ namespace octet {
       refresh_curve();
     }
 
+    void file_create() {
+    if(is_key_down(key_right)){
+      std::ofstream raceTrack;
+      raceTrack.open("raceTrack.ply");
+
+      raceTrack << "ply\n";
+      raceTrack <<"format ascii 1.0\n";
+      raceTrack <<"element vertex "<<int(vertBuff.size())<<"\n";
+      raceTrack << "property float x\n";
+      raceTrack << "property float y\n";
+      raceTrack << "property float z\n";
+      raceTrack << "element face "<< int(faceBuff.size() / 3)<<"\n";
+      raceTrack << "property list uchar int vertex_indices\n";
+      raceTrack << "end_header\n";
+      for(int i=0; i<vertBuff.size(); i++){
+      raceTrack << vertBuff[i]<<" "<<vertBuff[i + 1]<<" "<<vertBuff[i + 2]<<"\n";
+      }
+
+      raceTrack.close();
+      }
+
+    }
+
+
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
+       
+       file_create();
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       int vx = 0, vy = 0;
