@@ -217,14 +217,15 @@ namespace octet {
       raceTrack << "property list uchar int vertex_indices\n";
       raceTrack << "end_header\n";
 
-      for(int i=0; i<vertBuff.size()-3; i++){
+      //vertices
+      for(int i=0; i<vertBuff.size(); i++){
       raceTrack << vertBuff[i]<<" ";
       if ((i + 1) % 3 == 0) {
         raceTrack << "\n";
        }
       }
-
-      for (int j = 0; j < (faceBuff.size()/3); j++) {
+      //faces
+      for (int j = 0; j < faceBuff.size(); j++) {
         
         if ((j) % 3 == 0) {
           raceTrack << "3 ";
