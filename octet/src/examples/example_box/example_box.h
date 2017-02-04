@@ -108,13 +108,13 @@ namespace octet {
           vertBuff.push_back(n);
 
           if (vertPair > 0) {
+            faceBuff.push_back(vertPair * 2 - 2);
+            faceBuff.push_back(vertPair * 2 - 1);
               faceBuff.push_back(vertPair * 2);
-              faceBuff.push_back(vertPair * 2 - 1);
-              faceBuff.push_back(vertPair * 2 - 2);
 
-              faceBuff.push_back(vertPair * 2);
-              faceBuff.push_back(vertPair * 2 + 1);
               faceBuff.push_back(vertPair * 2 - 1);
+              faceBuff.push_back(vertPair * 2 + 1);
+              faceBuff.push_back(vertPair * 2);
           }
           vertPair++;
 
@@ -215,12 +215,18 @@ namespace octet {
 
     void file_create() {
     if(is_key_down(key_right)){
+
+      std::vector<float> vertexData = vertBuff;
+      for (int i = 0; i < vertexData.size(); i++) {
+        vertexData[i] *= 200.0f;
+      }
+
       std::ofstream raceTrack;
       raceTrack.open("raceTrack.ply");
 
       raceTrack << "ply\n";
       raceTrack <<"format ascii 1.0\n";
-      raceTrack <<"element vertex "<< (int)vertBuff.size() / 3 << "\n";
+      raceTrack <<"element vertex "<< (int)vertexData.size() / 3 << "\n";
       raceTrack << "property float x\n";
       raceTrack << "property float y\n";
       raceTrack << "property float z\n";
@@ -229,8 +235,8 @@ namespace octet {
       raceTrack << "end_header\n";
 
       //vertices
-      for(int i=0; i<vertBuff.size(); i++){
-      raceTrack << vertBuff[i]<<" ";
+      for(int i=0; i<vertexData.size(); i++){
+      raceTrack << vertexData[i]<<" ";
       if ((i + 1) % 3 == 0) {
         raceTrack << "\n";
        }
