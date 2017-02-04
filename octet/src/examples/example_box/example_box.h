@@ -151,15 +151,15 @@ namespace octet {
 
       case QUADRATIC_BEZIER:
 
-        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * 0.5f *(waypoints[idx1][0] + waypoints[idx2][0]);
-        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * 0.5f *(waypoints[idx1][1] + waypoints[idx2][1]);
+        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * waypoints[idx2][0];
+        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * waypoints[idx2][1];
 
         break;
 
       case CUBIC_BEZIER:
 
-        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * 0.5f*(waypoints[idx2][0] + waypoints[idx3][0]);
-        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * 0.5f*(waypoints[idx2][1] + waypoints[idx3][1]);
+        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * waypoints[idx3][0];
+        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * waypoints[idx3][1];
 
         break;
 
@@ -291,6 +291,14 @@ namespace octet {
       }
       glEnd();//end drawing of Line_strip
       
+      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+      glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+      glEnableVertexAttribArray(attribute_pos);
+      glUseProgram(road_shader.get_program());
+      glDrawArrays(GL_LINE_STRIP, 0, vertBuff.size() / 3);
+      glBindVertexArray(attribute_pos);
+
     }
   };
 }
