@@ -79,7 +79,7 @@ namespace octet {
       debugBezBuff = std::vector<vec3>();
       vertBuff = std::vector<float>();
       faceBuff = std::vector<int>();
-      int faceTracker = 1;
+      int faceTracker = 0;
 
       for (int i = 0; i < waypoints.size(); i += curve_step) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
@@ -100,10 +100,18 @@ namespace octet {
           vertBuff.push_back(p2[1]);
           vertBuff.push_back(p2[2]);
 
-          if (faceTracker > 1) {
-            faceBuff.push_back(faceTracker-1);
-            faceBuff.push_back(faceTracker);
-            faceBuff.push_back(faceTracker+1);
+          if (faceTracker > 0) {
+            if (faceTracker % 2 == 0) {
+              faceBuff.push_back(faceTracker - 1);
+              faceBuff.push_back(faceTracker + 1);
+              faceBuff.push_back(faceTracker);
+            }
+            else {
+              faceBuff.push_back(faceTracker);
+              faceBuff.push_back(faceTracker + 1);
+              faceBuff.push_back(faceTracker - 1);
+            }
+            
           }
           faceTracker++;
 
@@ -209,12 +217,12 @@ namespace octet {
 
       raceTrack << "ply\n";
       raceTrack <<"format ascii 1.0\n";
-      raceTrack <<"element vertex "<<int(vertBuff.size())<<"\n";
+      raceTrack <<"element vertex "<< (int)vertBuff.size() / 3 << "\n";
       raceTrack << "property float x\n";
       raceTrack << "property float y\n";
       raceTrack << "property float z\n";
-      raceTrack << "element face "<< int(faceBuff.size() / 3)<<"\n";
-      raceTrack << "property list uchar int vertex_indices\n";
+      raceTrack << "element face " << (int)faceBuff.size() / 3 << "\n";
+      raceTrack << "property list uint8 int32 vertex_indices\n";
       raceTrack << "end_header\n";
 
       //vertices
@@ -231,7 +239,7 @@ namespace octet {
           raceTrack << "3 ";
         }
 
-        raceTrack <<faceBuff[j]<<" ";
+        raceTrack << faceBuff[j]<<" ";
         if ((j + 1) % 3 == 0) {
           raceTrack <<"\n";
         }
