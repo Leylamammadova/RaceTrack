@@ -225,10 +225,14 @@ namespace octet {
       }
 
       for (int j = 0; j < (faceBuff.size()/3); j++) {
-      
+        
+        if ((j) % 3 == 0) {
+          raceTrack << "3 ";
+        }
+
         raceTrack <<faceBuff[j]<<" ";
         if ((j + 1) % 3 == 0) {
-          raceTrack <<"\n3 ";
+          raceTrack <<"\n";
         }
       }
       raceTrack.close();
