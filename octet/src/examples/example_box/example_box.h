@@ -79,7 +79,7 @@ namespace octet {
       debugBezBuff = std::vector<vec3>();
       vertBuff = std::vector<float>();
       faceBuff = std::vector<int>();
-      int faceTracker = 0;
+      int vertPair = 0;
 
       for (int i = 0; i < waypoints.size(); i += curve_step) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
@@ -100,20 +100,16 @@ namespace octet {
           vertBuff.push_back(p2[1]);
           vertBuff.push_back(p2[2]);
 
-          if (faceTracker > 0) {
-            if (faceTracker % 2 == 0) {
-              faceBuff.push_back(faceTracker - 1);
-              faceBuff.push_back(faceTracker + 1);
-              faceBuff.push_back(faceTracker);
-            }
-            else {
-              faceBuff.push_back(faceTracker);
-              faceBuff.push_back(faceTracker + 1);
-              faceBuff.push_back(faceTracker - 1);
-            }
-            
+          if (vertPair > 0) {
+              faceBuff.push_back(vertPair * 2);
+              faceBuff.push_back(vertPair * 2 - 1);
+              faceBuff.push_back(vertPair * 2 - 2);
+
+              faceBuff.push_back(vertPair * 2);
+              faceBuff.push_back(vertPair * 2 + 1);
+              faceBuff.push_back(vertPair * 2 - 1);
           }
-          faceTracker++;
+          vertPair++;
 
           debugBezBuff.push_back(pos);
         }
@@ -232,6 +228,7 @@ namespace octet {
         raceTrack << "\n";
        }
       }
+
       //faces
       for (int j = 0; j < faceBuff.size(); j++) {
         
