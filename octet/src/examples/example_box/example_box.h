@@ -216,10 +216,21 @@ namespace octet {
       raceTrack << "element face "<< int(faceBuff.size() / 3)<<"\n";
       raceTrack << "property list uchar int vertex_indices\n";
       raceTrack << "end_header\n";
-      for(int i=0; i<vertBuff.size(); i++){
-      raceTrack << vertBuff[i]<<" "<<vertBuff[i + 1]<<" "<<vertBuff[i + 2]<<"\n";
+
+      for(int i=0; i<vertBuff.size()-3; i++){
+      raceTrack << vertBuff[i]<<" ";
+      if ((i + 1) % 3 == 0) {
+        raceTrack << "\n";
+       }
       }
 
+      for (int j = 0; j < (faceBuff.size()/3); j++) {
+      
+        raceTrack <<faceBuff[j]<<" ";
+        if ((j + 1) % 3 == 0) {
+          raceTrack <<"\n3 ";
+        }
+      }
       raceTrack.close();
       }
 
