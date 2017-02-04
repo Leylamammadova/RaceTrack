@@ -287,6 +287,15 @@ namespace octet {
         glVertex3f(debugBezBuff[i+1][0], debugBezBuff[i+1][1], debugBezBuff[i+1][2]);
       }
       glEnd();//end drawing of Line_strip
+
+
+      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+      glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+      glEnableVertexAttribArray(attribute_pos);
+      glUseProgram(road_shader.get_program());
+      glDrawArrays(GL_LINE_STRIP, 0, vertBuff.size() / 3);
+      glBindVertexArray(attribute_pos);
       
     }
   };
