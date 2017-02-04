@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <ctime>
 #include "points_generator.h"
+#include "perlin.h"
 
 
 namespace octet {
@@ -28,10 +29,12 @@ namespace octet {
 
     std::vector<std::tuple<vec3, vec3>> input;
     std::vector<float> vertBuff;
+    std::vector<int> faceBuff;
     std::vector<vec3> debugBezBuff; // Used to show the actual bezier path with debug lines
     GLuint vertex_buffer;
     shader road_shader;
 
+    perlin perlin_noise;
     points_generator pg;
     std::vector<vec3> waypoints;
 
@@ -70,13 +73,18 @@ namespace octet {
         break;
       }
 
+      perlin_noise = perlin();
+
       // create points for curves
       int num_points = curve_step * track_length + 1;
       waypoints = std::vector<vec3>();
       waypoints = pg.generate_random_points(num_points);
 
+
       debugBezBuff = std::vector<vec3>();
       vertBuff = std::vector<float>();
+      faceBuff = std::vector<int>();
+      int vertPair = 0;
 
       for (int i = 0; i < waypoints.size(); i += curve_step) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
@@ -85,6 +93,8 @@ namespace octet {
           vec3 tan = segment_pos - pos;
           vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
 
+          double n = (float)perlin_noise.noise((double)pos[0], (double)pos[1], 0.0);
+
           norm = norm.normalize() * TRACK_WIDTH * 0.5f; // Create track radius
 
           vec3 p1 = pos - norm; // Calculate border vertex locations
@@ -92,16 +102,28 @@ namespace octet {
 
           vertBuff.push_back(p1[0]); // Add vertex data (3 Floats (x, y and y)) to the buffer
           vertBuff.push_back(p1[1]); // The buffer is used by opengl to render the triangles
-          vertBuff.push_back(p1[2]);
+          vertBuff.push_back(n); // Use the perlin height at the center of the track for this point along the track.
           vertBuff.push_back(p2[0]);
           vertBuff.push_back(p2[1]);
-          vertBuff.push_back(p2[2]);
+          vertBuff.push_back(n);
+
+          if (vertPair > 0) {
+            faceBuff.push_back(vertPair * 2 - 2);
+            faceBuff.push_back(vertPair * 2 - 1);
+              faceBuff.push_back(vertPair * 2);
+
+              faceBuff.push_back(vertPair * 2 - 1);
+              faceBuff.push_back(vertPair * 2 + 1);
+              faceBuff.push_back(vertPair * 2);
+          }
+          vertPair++;
 
           debugBezBuff.push_back(pos);
         }
       }
-
-      printf("Created curve with %d points\n", num_points);
+      printf("Curve with %d points\n", num_points);
+      printf("Mesh with %d vertices\n", (int)vertBuff.size()/3);
+      printf("%d total faces\n", (int)faceBuff.size() / 3);
     }
 
     vec3 get_bezier_point(float t, int iter) {
@@ -109,6 +131,7 @@ namespace octet {
 
       // Glitch fix
       if (t > 1.0f) { 
+        //printf("Tangent calculation glitching over into next points group\n"); 
         t = t - 1.0f;
         iter += curve_step;
       }
@@ -148,15 +171,15 @@ namespace octet {
 
       case QUADRATIC_BEZIER:
 
-        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * 0.5f *(waypoints[idx1][0] + waypoints[idx2][0]);
-        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * 0.5f *(waypoints[idx1][1] + waypoints[idx2][1]);
+        point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * waypoints[idx2][0];
+        point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * waypoints[idx2][1];
 
         break;
 
       case CUBIC_BEZIER:
 
-        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * 0.5f*(waypoints[idx2][0] + waypoints[idx3][0]);
-        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * 0.5f*(waypoints[idx2][1] + waypoints[idx3][1]);
+        point[0] = uuu * waypoints[idx][0] + 3 * uu * t * waypoints[idx1][0] + 3 * u * tt* waypoints[idx2][0] + ttt * waypoints[idx3][0];
+        point[1] = uuu * waypoints[idx][1] + 3 * uu * t * waypoints[idx1][1] + 3 * u * tt* waypoints[idx2][1] + ttt * waypoints[idx3][1];
 
         break;
 
@@ -178,7 +201,7 @@ namespace octet {
 
     /// this is called once OpenGL is initialized
     void app_init() {
-
+      perlin_noise = perlin();
       pg = points_generator();
 
       current_curve = CUBIC_BEZIER;
@@ -190,8 +213,57 @@ namespace octet {
       refresh_curve();
     }
 
+    void file_create() {
+    if(is_key_down(key_right)){
+
+      std::vector<float> vertexData = vertBuff;
+      for (int i = 0; i < vertexData.size(); i++) {
+        vertexData[i] *= 200.0f;
+      }
+
+      std::ofstream raceTrack;
+      raceTrack.open("raceTrack.ply");
+
+      raceTrack << "ply\n";
+      raceTrack <<"format ascii 1.0\n";
+      raceTrack <<"element vertex "<< (int)vertexData.size() / 3 << "\n";
+      raceTrack << "property float x\n";
+      raceTrack << "property float y\n";
+      raceTrack << "property float z\n";
+      raceTrack << "element face " << (int)faceBuff.size() / 3 << "\n";
+      raceTrack << "property list uint8 int32 vertex_indices\n";
+      raceTrack << "end_header\n";
+
+      //vertices
+      for(int i=0; i<vertexData.size(); i++){
+      raceTrack << vertexData[i]<<" ";
+      if ((i + 1) % 3 == 0) {
+        raceTrack << "\n";
+       }
+      }
+
+      //faces
+      for (int j = 0; j < faceBuff.size(); j++) {
+        
+        if ((j) % 3 == 0) {
+          raceTrack << "3 ";
+        }
+
+        raceTrack << faceBuff[j]<<" ";
+        if ((j + 1) % 3 == 0) {
+          raceTrack <<"\n";
+        }
+      }
+      raceTrack.close();
+      }
+
+    }
+
+
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
+       
+       file_create();
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       int vx = 0, vy = 0;
@@ -296,7 +368,7 @@ namespace octet {
       glUseProgram(road_shader.get_program());
       glDrawArrays(GL_LINE_STRIP, 0, vertBuff.size() / 3);
       glBindVertexArray(attribute_pos);
-      
+
     }
   };
 }
