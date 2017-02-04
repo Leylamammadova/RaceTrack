@@ -28,6 +28,7 @@ namespace octet {
 
     std::vector<std::tuple<vec3, vec3>> input;
     std::vector<float> vertBuff;
+    std::vector<int> faceBuff;
     std::vector<vec3> debugBezBuff; // Used to show the actual bezier path with debug lines
     GLuint vertex_buffer;
     shader road_shader;
@@ -77,6 +78,8 @@ namespace octet {
 
       debugBezBuff = std::vector<vec3>();
       vertBuff = std::vector<float>();
+      faceBuff = std::vector<int>();
+      int faceTracker = 1;
 
       for (int i = 0; i < waypoints.size(); i += curve_step) {
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
@@ -97,11 +100,20 @@ namespace octet {
           vertBuff.push_back(p2[1]);
           vertBuff.push_back(p2[2]);
 
+          if (faceTracker > 1) {
+            faceBuff.push_back(faceTracker-1);
+            faceBuff.push_back(faceTracker);
+            faceBuff.push_back(faceTracker+1);
+          }
+          faceTracker++;
+
           debugBezBuff.push_back(pos);
         }
       }
 
       printf("Created curve with %d points\n", num_points);
+
+      printf("%d total faces\n", (int)faceBuff.size() / 3);
     }
 
     vec3 get_bezier_point(float t, int iter) {
@@ -287,6 +299,15 @@ namespace octet {
         glVertex3f(debugBezBuff[i+1][0], debugBezBuff[i+1][1], debugBezBuff[i+1][2]);
       }
       glEnd();//end drawing of Line_strip
+
+
+      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+      glBufferData(GL_ARRAY_BUFFER, vertBuff.size() * sizeof(GLfloat), &vertBuff[0], GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+      glEnableVertexAttribArray(attribute_pos);
+      glUseProgram(road_shader.get_program());
+      glDrawArrays(GL_LINE_STRIP, 0, vertBuff.size() / 3);
+      glBindVertexArray(attribute_pos);
       
     }
   };
