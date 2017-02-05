@@ -5,6 +5,7 @@ namespace octet {
     std::vector<vec3> waypoints;
     std::vector<vec3> sorted_waypoints;
 
+    // getting a random value within a range.
     float random_float(float a, float b) {
       float random = ((float)rand()) / (float)RAND_MAX;
       float diff = b - a;
@@ -12,14 +13,15 @@ namespace octet {
       return a + r;
     }
 
+    // calculating the distance between two vectors a -> b
     float get_distance(vec3 a, vec3 b) {
       return sqrt(((b[0] - a[0]) * (b[0] - a[0])) // x
         + ((b[1] - a[1]) * (b[1] - a[1])) // y
         + ((b[2] - a[2]) * (b[2] - a[2]))); // z
     }
 
+    // sorting points by closest distance to each other
     void sort_waypoints() {
-      // sorting points by closest distance to each other
       sorted_waypoints.push_back(waypoints.back());
       waypoints.pop_back();
       float shortest_dist, distance2;
@@ -42,20 +44,36 @@ namespace octet {
       }
     }
 
+    // Averaging points back into original vector.
     void average_waypoints() {
-      // Averaging points back into original vector.
       for (int i = 0; i < sorted_waypoints.size(); i++) {
-        if ((i + 2) == sorted_waypoints.size()) {
+        if ((i + 2) == sorted_waypoints.size()) { // Penultimate element of the vector
           waypoints.push_back((sorted_waypoints[i] + sorted_waypoints[i + 1] + sorted_waypoints[0]) / 3);
         }
-        else if ((i + 1) == sorted_waypoints.size()) {
+        else if ((i + 1) == sorted_waypoints.size()) { // The end of the vector
           waypoints.push_back((sorted_waypoints[i] + sorted_waypoints[0] + sorted_waypoints[1]) / 3);
         }
-        else {
+        else { // for everything else
           waypoints.push_back((sorted_waypoints[i] + sorted_waypoints[i + 1] + sorted_waypoints[i + 2]) / 3);
         }
       }
     }
+
+    // Separate points by point radius
+    void separate_points_by_radius() {
+      float radius = 0.3f;
+      for (int i = 0; i < waypoints.size(); i++) {
+        for (int j = 0; j < waypoints.size(); j++) {
+          float distance = get_distance(waypoints[i], waypoints[j]);
+          if (!i == j) {
+            if (distance < radius) {
+              printf("Collision detected: Waypoints[%d] + Waypoints[%d]\n", i, j);
+            } // end of if
+          } // end of if
+        } // end of for loop
+      } // end of for loop
+    }
+
   public:
     points_generator() {}
 
@@ -70,6 +88,7 @@ namespace octet {
       }
       sort_waypoints();
       average_waypoints();
+      separate_points_by_radius();
       return waypoints;
     }
   };
