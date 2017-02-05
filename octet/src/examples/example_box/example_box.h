@@ -21,6 +21,7 @@ namespace octet {
       CATMULL_ROM
     };
     curve_mode current_curve;
+    curve_mode prev_curve;
 
     bool debug_mode = true;
 
@@ -39,7 +40,7 @@ namespace octet {
     std::vector<vec3> waypoints;
 
     float TRACK_WIDTH = 0.1f;
-    float DETAIL_STEP = 0.01f;
+    float DETAIL_STEP = 0.5f;
     int track_length = 10;
     int curve_step;
 
@@ -86,7 +87,38 @@ namespace octet {
       faceBuff = std::vector<int>();
       int vertPair = 0;
 
-      for (int i = 0; i < waypoints.size(); i += curve_step) {
+      // This is to avoid an infinite loop when adding points...
+      // ...to the vector during the loop.
+      int track_size = waypoints.size();
+
+      for (int i = 0; i < track_size; i += curve_step) {
+        // Connecting the start and the end points of the track...
+        // ...by generating points.
+        if ((i == track_size - 1) 
+          && (current_curve == QUADRATIC_BEZIER || CUBIC_BEZIER))
+        {
+          vec3 v_point = (waypoints[i] + waypoints[0]) / 2;
+          waypoints.push_back(v_point);
+          if (current_curve == CUBIC_BEZIER) {
+            v_point = (waypoints[i+1] + waypoints[0]) / 2;
+            waypoints.push_back(v_point);
+          }
+          v_point = waypoints[0];
+          waypoints.push_back(v_point);
+        }
+
+        // Getting rid of end points when changing to CATMULL_ROM
+        if ((i == track_size - 1) 
+          && (prev_curve == QUADRATIC_BEZIER || CUBIC_BEZIER) 
+          && (current_curve == CATMULL_ROM))
+        {  
+          waypoints.pop_back();
+          waypoints.pop_back();
+          if (prev_curve == CUBIC_BEZIER) {
+            waypoints.pop_back();
+          }
+        }
+
         for (float t = 0.0f; t <= 1.0f; t += DETAIL_STEP) {
           vec3 pos = get_bezier_point(t, i);
           vec3 segment_pos = get_bezier_point(t + DETAIL_STEP * 0.01f, i);
@@ -110,11 +142,11 @@ namespace octet {
           if (vertPair > 0) {
             faceBuff.push_back(vertPair * 2 - 2);
             faceBuff.push_back(vertPair * 2 - 1);
-              faceBuff.push_back(vertPair * 2);
+            faceBuff.push_back(vertPair * 2);
 
-              faceBuff.push_back(vertPair * 2 - 1);
-              faceBuff.push_back(vertPair * 2 + 1);
-              faceBuff.push_back(vertPair * 2);
+            faceBuff.push_back(vertPair * 2 - 1);
+            faceBuff.push_back(vertPair * 2 + 1);
+            faceBuff.push_back(vertPair * 2);
           }
           vertPair++;
 
@@ -122,7 +154,7 @@ namespace octet {
         }
       }
       printf("Curve with %d points\n", num_points);
-      printf("Mesh with %d vertices\n", (int)vertBuff.size()/3);
+      printf("Mesh with %d vertices\n", (int)vertBuff.size() / 3);
       printf("%d total faces\n", (int)faceBuff.size() / 3);
     }
 
@@ -130,7 +162,7 @@ namespace octet {
       vec3 point(0, 0, 0);
 
       // Glitch fix
-      if (t > 1.0f) { 
+      if (t > 1.0f) {
         //printf("Tangent calculation glitching over into next points group\n"); 
         t = t - 1.0f;
         iter += curve_step;
@@ -173,7 +205,7 @@ namespace octet {
 
         point[0] = uu * waypoints[idx][0] + 2 * u * t * waypoints[idx1][0] + tt * waypoints[idx2][0];
         point[1] = uu * waypoints[idx][1] + 2 * u * t * waypoints[idx1][1] + tt * waypoints[idx2][1];
-
+        
         break;
 
       case CUBIC_BEZIER:
@@ -204,7 +236,7 @@ namespace octet {
       perlin_noise = perlin();
       pg = points_generator();
 
-      current_curve = CUBIC_BEZIER;
+      current_curve = QUADRATIC_BEZIER;
       track_length = 10;
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
@@ -214,47 +246,47 @@ namespace octet {
     }
 
     void file_create() {
-    if(is_key_down(key_right)){
+      if (is_key_down(key_right)) {
 
-      std::vector<float> vertexData = vertBuff;
-      for (int i = 0; i < vertexData.size(); i++) {
-        vertexData[i] *= 200.0f;
-      }
-
-      std::ofstream raceTrack;
-      raceTrack.open("raceTrack.ply");
-
-      raceTrack << "ply\n";
-      raceTrack <<"format ascii 1.0\n";
-      raceTrack <<"element vertex "<< (int)vertexData.size() / 3 << "\n";
-      raceTrack << "property float x\n";
-      raceTrack << "property float y\n";
-      raceTrack << "property float z\n";
-      raceTrack << "element face " << (int)faceBuff.size() / 3 << "\n";
-      raceTrack << "property list uint8 int32 vertex_indices\n";
-      raceTrack << "end_header\n";
-
-      //vertices
-      for(int i=0; i<vertexData.size(); i++){
-      raceTrack << vertexData[i]<<" ";
-      if ((i + 1) % 3 == 0) {
-        raceTrack << "\n";
-       }
-      }
-
-      //faces
-      for (int j = 0; j < faceBuff.size(); j++) {
-        
-        if ((j) % 3 == 0) {
-          raceTrack << "3 ";
+        std::vector<float> vertexData = vertBuff;
+        for (int i = 0; i < vertexData.size(); i++) {
+          vertexData[i] *= 200.0f;
         }
 
-        raceTrack << faceBuff[j]<<" ";
-        if ((j + 1) % 3 == 0) {
-          raceTrack <<"\n";
+        std::ofstream raceTrack;
+        raceTrack.open("raceTrack.ply");
+
+        raceTrack << "ply\n";
+        raceTrack << "format ascii 1.0\n";
+        raceTrack << "element vertex " << (int)vertexData.size() / 3 << "\n";
+        raceTrack << "property float x\n";
+        raceTrack << "property float y\n";
+        raceTrack << "property float z\n";
+        raceTrack << "element face " << (int)faceBuff.size() / 3 << "\n";
+        raceTrack << "property list uint8 int32 vertex_indices\n";
+        raceTrack << "end_header\n";
+
+        //vertices
+        for (int i = 0; i < vertexData.size(); i++) {
+          raceTrack << vertexData[i] << " ";
+          if ((i + 1) % 3 == 0) {
+            raceTrack << "\n";
+          }
         }
-      }
-      raceTrack.close();
+
+        //faces
+        for (int j = 0; j < faceBuff.size(); j++) {
+
+          if ((j) % 3 == 0) {
+            raceTrack << "3 ";
+          }
+
+          raceTrack << faceBuff[j] << " ";
+          if ((j + 1) % 3 == 0) {
+            raceTrack << "\n";
+          }
+        }
+        raceTrack.close();
       }
 
     }
@@ -262,8 +294,8 @@ namespace octet {
 
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
-       
-       file_create();
+
+      file_create();
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       int vx = 0, vy = 0;
@@ -281,6 +313,7 @@ namespace octet {
         refresh_curve();
       }
       if (is_key_going_up(key_f3)) {
+        prev_curve = current_curve;
         current_curve = CATMULL_ROM;
         refresh_curve();
       }
@@ -302,7 +335,8 @@ namespace octet {
       if (debug_mode) {
         glClearColor(0.5f, 0.5f, 0.5f, 1); // Grey colour
         draw_debug();
-      }else{
+      }
+      else {
         glClearColor(0.3f, 0.67f, 0.28f, 1); // Grass green colour
         // openGL takes in an array of floats. Every 3 floats represents one vertex. 
         // Bellow is code telling opengl what float vertex data to use.
@@ -344,7 +378,7 @@ namespace octet {
 
       // Draw the waypoints
       glColor3f(1.0f, 0.0f, 0.0f); //red colour
-      
+
       glBegin(GL_POINTS); //starts drawing of points
       for (vec3 &point : waypoints) {
         glVertex3f(point[0], point[1], point[2]);
@@ -356,7 +390,7 @@ namespace octet {
       glBegin(GL_LINE_STRIP); //starts drawing of line_strip
       for (int i = 0; i < debugBezBuff.size() - 1; i++) {
         glVertex3f(debugBezBuff[i][0], debugBezBuff[i][1], debugBezBuff[i][2]);
-        glVertex3f(debugBezBuff[i+1][0], debugBezBuff[i+1][1], debugBezBuff[i+1][2]);
+        glVertex3f(debugBezBuff[i + 1][0], debugBezBuff[i + 1][1], debugBezBuff[i + 1][2]);
       }
       glEnd();//end drawing of Line_strip
 
