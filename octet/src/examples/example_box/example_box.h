@@ -40,7 +40,7 @@ namespace octet {
     std::vector<vec3> waypoints;
 
     float TRACK_WIDTH = 0.1f;
-    float DETAIL_STEP = 0.5f;
+    float DETAIL_STEP = 0.01f;
     int track_length = 10;
     int curve_step;
 
