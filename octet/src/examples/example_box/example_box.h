@@ -154,7 +154,15 @@ namespace octet {
           debugBezBuff.push_back(pos);
         }
       }
-      printf("Curve with %d points\n", num_points);
+      /*
+          float TRACK_WIDTH = 0.1f;
+    float DETAIL_STEP = 0.01f;
+    float height_scale = 0.5f;
+    int track_length = 10;
+    int curve_step;
+      */
+      printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+      printf("RACE TRACK\n_____________________\nTrack width: %f\nMesh Detail: %f\nHeight Scale: %f\nTrack Length: %d\n_____________________\n", TRACK_WIDTH, DETAIL_STEP, height_scale, track_length);
       printf("Mesh with %d vertices\n", (int)vertBuff.size() / 3);
       printf("%d total faces\n", (int)faceBuff.size() / 3);
     }
@@ -342,12 +350,21 @@ namespace octet {
         refresh_curve();
       }
 
-      if (is_key_going_up(key_f10)) {
+      if (is_key_going_up(key_f8)) {
         height_scale += 0.1f;
         refresh_curve();
       }
-      if (is_key_going_up(key_f9)) {
+      if (is_key_going_up(key_f7)) {
         height_scale -= 0.1f;
+        refresh_curve();
+      }
+
+      if (is_key_going_up(key_f10)) {
+        DETAIL_STEP -= 0.01f;
+        refresh_curve();
+      }
+      if (is_key_going_up(key_f9)) {
+        DETAIL_STEP += 0.01f;
         refresh_curve();
       }
 

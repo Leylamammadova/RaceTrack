@@ -16,8 +16,10 @@ Key Bindings:
 | Decrease Track Length  | Down Arrow  |
 | Increase Track Width  | Right Arrow  |
 | Decrease Track Width  | Left Arrow  |
-| Increase Height Amplitude  | F10  |
-| Decrease Height Amplitude  | F9  |
+| Increase Height Amplitude  | F8  |
+| Decrease Height Amplitude  | F7  |
+| Increase Mesh Detail  | F10  |
+| Decrease Mesh Detail  | F9  |
 
 
 # octet
