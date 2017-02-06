@@ -41,6 +41,7 @@ namespace octet {
 
     float TRACK_WIDTH = 0.1f;
     float DETAIL_STEP = 0.01f;
+    float height_scale = 0.5f;
     int track_length = 10;
     int curve_step;
 
@@ -125,7 +126,7 @@ namespace octet {
           vec3 tan = segment_pos - pos;
           vec3 norm = tan.cross(vec3(0, 0, 1)); // Get normal from tangent.
 
-          double n = (float)perlin_noise.noise((double)pos[0], (double)pos[1], 0.0);
+          double n = (float)perlin_noise.noise((double)pos[0], (double)pos[1], 0.0) * height_scale;
 
           norm = norm.normalize() * TRACK_WIDTH * 0.5f; // Create track radius
 
@@ -236,7 +237,7 @@ namespace octet {
       perlin_noise = perlin();
       pg = points_generator();
 
-      current_curve = QUADRATIC_BEZIER;
+      current_curve = CATMULL_ROM;
       track_length = 10;
 
       glGenBuffers(1, &vertex_buffer); // Sets up our vertex array buffer for rendering
@@ -246,57 +247,53 @@ namespace octet {
     }
 
     void file_create() {
-      if (is_key_down(key_right)) {
-
-        std::vector<float> vertexData = vertBuff;
-        for (int i = 0; i < vertexData.size(); i++) {
-          vertexData[i] *= 200.0f;
-        }
-
-        std::ofstream raceTrack;
-        raceTrack.open("raceTrack.ply");
-
-        raceTrack << "ply\n";
-        raceTrack << "format ascii 1.0\n";
-        raceTrack << "element vertex " << (int)vertexData.size() / 3 << "\n";
-        raceTrack << "property float x\n";
-        raceTrack << "property float y\n";
-        raceTrack << "property float z\n";
-        raceTrack << "element face " << (int)faceBuff.size() / 3 << "\n";
-        raceTrack << "property list uint8 int32 vertex_indices\n";
-        raceTrack << "end_header\n";
-
-        //vertices
-        for (int i = 0; i < vertexData.size(); i++) {
-          raceTrack << vertexData[i] << " ";
-          if ((i + 1) % 3 == 0) {
-            raceTrack << "\n";
-          }
-        }
-
-        //faces
-        for (int j = 0; j < faceBuff.size(); j++) {
-
-          if ((j) % 3 == 0) {
-            raceTrack << "3 ";
-          }
-
-          raceTrack << faceBuff[j] << " ";
-          if ((j + 1) % 3 == 0) {
-            raceTrack << "\n";
-          }
-        }
-        raceTrack.close();
+      float scale_mult = 20.0f / TRACK_WIDTH;
+      std::vector<float> vertexData = vertBuff;
+      for (int i = 0; i < vertexData.size(); i++) {
+        vertexData[i] *= scale_mult;
       }
+
+      std::ofstream raceTrack;
+      raceTrack.open("raceTrack.ply");
+
+      raceTrack << "ply\n";
+      raceTrack << "format ascii 1.0\n";
+      raceTrack << "element vertex " << (int)vertexData.size() / 3 << "\n";
+      raceTrack << "property float x\n";
+      raceTrack << "property float y\n";
+      raceTrack << "property float z\n";
+      raceTrack << "element face " << (int)faceBuff.size() / 3 << "\n";
+      raceTrack << "property list uint8 int32 vertex_indices\n";
+      raceTrack << "end_header\n";
+
+      //vertices
+      for (int i = 0; i < vertexData.size(); i++) {
+        raceTrack << vertexData[i] << " ";
+        if ((i + 1) % 3 == 0) {
+          raceTrack << "\n";
+        }
+      }
+
+      //faces
+      for (int j = 0; j < faceBuff.size(); j++) {
+
+        if ((j) % 3 == 0) {
+          raceTrack << "3 ";
+        }
+
+        raceTrack << faceBuff[j] << " ";
+        if ((j + 1) % 3 == 0) {
+          raceTrack << "\n";
+        }
+      }
+      raceTrack.close();
+      
 
     }
 
 
     /// this is called to draw the world
     void draw_world(int x, int y, int w, int h) {
-
-      file_create();
-
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       int vx = 0, vy = 0;
       get_viewport_size(vx, vy);
@@ -304,6 +301,11 @@ namespace octet {
       if (is_key_going_up(key_f5)) {
         refresh_curve();
       }
+
+      if (is_key_going_down(key_f6)) {
+        file_create();
+      }
+
       if (is_key_going_up(key_f1)) {
         current_curve = QUADRATIC_BEZIER;
         refresh_curve();
@@ -326,9 +328,26 @@ namespace octet {
         track_length++;
         refresh_curve();
       }
-
       if (is_key_going_up(key_down)) {
         track_length--;
+        refresh_curve();
+      }
+
+      if (is_key_going_up(key_right)) {
+        TRACK_WIDTH += 0.05f;
+        refresh_curve();
+      }
+      if (is_key_going_up(key_left)) {
+        TRACK_WIDTH -= 0.05f;
+        refresh_curve();
+      }
+
+      if (is_key_going_up(key_f10)) {
+        height_scale += 0.1f;
+        refresh_curve();
+      }
+      if (is_key_going_up(key_f9)) {
+        height_scale -= 0.1f;
         refresh_curve();
       }
 

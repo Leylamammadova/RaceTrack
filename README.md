@@ -1,25 +1,23 @@
 # Race Track
 
+------------------
+
 Key Bindings:
 
-Curve Modes:
-
-F1 : QUADRATIC_BEZIER
-
-F2 : CUBIC_BEZIER
-
-F3 : CATMULL_ROM
-
-
-Hotkeys:
-
-F5 : Refresh
-
-Space_bar : Toggle debug mode
-
-up arrow : Increase track length
-
-down arrow : decrease track length
+| Command  | Key |
+| ------------- | ------------- |
+| Switch to QUADRATIC_BEZIER  | F1  |
+| Switch to CUBIC_BEZIER  | F2  |
+| Switch to CATMULL_ROM  | F3  |
+| Randomise Track | F5  |
+| Save Track | F6  |
+| Toggle Debug mode  | Space bar  |
+| Increase Track Length  | Up Arrow  |
+| Decrease Track Length  | Down Arrow  |
+| Increase Track Width  | Right Arrow  |
+| Decrease Track Width  | Left Arrow  |
+| Increase Height Amplitude  | F10  |
+| Decrease Height Amplitude  | F9  |
 
 
 # octet
